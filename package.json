@@ -1,0 +1,53 @@
+{
+  "name": "ono-toolkit",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0",
+  "scripts": {
+    "dev": "pnpm --dir apps/web dev",
+    "build": "pnpm --dir apps/web build",
+    "preview:worker": "pnpm build && wrangler dev --port 8788",
+    "typecheck": "pnpm -C apps/web typecheck && tsc --noEmit -p tsconfig.json",
+    "lint": "pnpm -C apps/web exec nuxt prepare && eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "deploy": "pnpm build && wrangler deploy"
+  },
+  "dependencies": {
+    "@jspawn/ghostscript-wasm": "0.0.2",
+    "@nuxt/ui": "^4.9.0",
+    "@pinia/nuxt": "^0.11.3",
+    "motion-v": "^1.7.1",
+    "nuxt": "^4.1.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.1.200",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.22",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@eslint/js": "^10.0.1",
+    "@iconify-json/lucide": "^1.2.120",
+    "@nuxt/eslint": "^1.16.0",
+    "@playwright/test": "^1.55.1",
+    "@types/node": "^26.1.1",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.9.2",
+    "globals": "^17.7.0",
+    "happy-dom": "^20.0.0",
+    "prettier": "^3.9.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.63.0",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.0.8",
+    "wrangler": "^4.110.0"
+  },
+  "packageManager": "pnpm@11.7.0"
+}

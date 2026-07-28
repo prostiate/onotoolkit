@@ -1,0 +1,21 @@
+node_modules/
+.nuxt/
+.output/
+.wrangler/
+dist/
+dist-worker*/
+test-results/
+playwright-report/
+tests/e2e/.fixtures/
+.env
+.env.*
+!.env.example
+!.env.*.example
+apps/web/app/composables/*.js
+apps/web/app/stores/*.js
+apps/web/app/utils/*.js
+apps/web/nuxt.config.js
+packages/shared/**/*.js
+
+# Docs are tracked; only the raw prompt captures are ignored.
+docs/

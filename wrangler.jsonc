@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ono-toolkit",
+  "main": "apps/web/.output/server/index.mjs",
+  "compatibility_date": "2026-07-28",
+  "compatibility_flags": ["nodejs_compat"],
+  // SSR Worker (Nitro cloudflare_module). Pages render on the edge for SEO; the
+  // static client bundle and the PDF WASM are served from the assets binding.
+  // File processing still runs entirely in the browser - nothing is uploaded.
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "apps/web/.output/public"
+  },
+  "routes": [
+    {
+      "pattern": "onotoolkit.irfankurniawan.com",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

@@ -1,0 +1,13 @@
+node_modules
+.nuxt
+.output
+.wrangler
+dist
+dist-worker*
+test-results
+playwright-report
+pnpm-lock.yaml
+LICENSE
+docs/prompt-*.md
+docs/prompt.md
+apps/web/public/vendor

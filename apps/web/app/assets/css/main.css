@@ -1,0 +1,37 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/*
+ * Ono Toolkit - modern, clean, high-contrast theme with a cyan brand accent.
+ * Surfaces, text, and borders use Nuxt UI semantic tokens (bg-default,
+ * text-muted, ring-default, ...) so light/dark contrast is correct everywhere.
+ * This file only sets the page backdrop and color-scheme.
+ */
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(8, 145, 178, 0.1), transparent 60%),
+    radial-gradient(760px 420px at 100% 0%, rgba(14, 165, 233, 0.08), transparent 55%), #f8fafc;
+  background-attachment: fixed;
+}
+
+.dark body {
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(8, 145, 178, 0.18), transparent 60%),
+    radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 55%), #0b1220;
+  background-attachment: fixed;
+}
