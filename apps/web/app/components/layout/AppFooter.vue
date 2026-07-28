@@ -24,6 +24,8 @@
         >
           Source
         </a>
+        &middot;
+        <NuxtLink to="/privacy" class="text-primary font-medium hover:underline">Privacy</NuxtLink>
       </p>
       <p class="text-dimmed text-xs">
         PDF compression powered by Ghostscript (AGPL-3.0), compiled to WebAssembly.

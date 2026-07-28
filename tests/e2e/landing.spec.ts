@@ -34,4 +34,12 @@ test.describe("landing page", () => {
     await page.getByRole("button", { name: "Switch to light mode" }).click();
     await expect(html).toHaveClass(/light/);
   });
+
+  test("opens the privacy page from the footer", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Privacy" }).click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
+    await expect(page.getByText("Your files never leave your device")).toBeVisible();
+  });
 });
