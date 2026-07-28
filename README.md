@@ -1,7 +1,5 @@
 # Ono Toolkit
 
-[![CI](https://github.com/prostiate/onotoolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/prostiate/onotoolkit/actions/workflows/ci.yml)
-
 A suite of small, fast, **client-side-only** tools that run entirely in your
 browser. Nothing is ever uploaded to a server.
 
@@ -40,38 +38,37 @@ pnpm validate     # format + lint + typecheck + unit tests + build
 pnpm test:e2e     # Playwright: real in-browser compression + dark mode
 ```
 
-## Continuous integration
+## CI/CD
 
-GitHub Actions (free for public repos) runs on every pull request and push to
-`main`:
+Continuous integration and deployment run on **Cloudflare Workers Builds**
+(Cloudflare's own build system - no GitHub Actions, no payment method needed).
+On push to `main`, Cloudflare runs the build command and deploys the Worker.
 
-- **`.github/workflows/ci.yml`** - `pnpm validate` (format, lint, typecheck,
-  unit tests, build) and `pnpm test:e2e` (Playwright).
+- **Build command:** `pnpm validate` (format + lint + typecheck + unit tests +
+  build) - a failing build does not deploy.
+- **Deploy command:** `wrangler deploy`.
 
-Recommended branch protection on `main`: require the `Validate` check to pass
-before merging. Work on short-lived branches and open PRs (trunk-based); `main`
-stays always-deployable.
+Because the build runs inside your Cloudflare account, no API token or secret is
+required. See `docs/DEPLOYMENT-guide.md` for the exact dashboard setup.
+
+Run before pushing (local gate; e2e isn't run in Workers Builds):
+
+```bash
+pnpm validate
+pnpm test:e2e
+```
+
+Optionally enable the bundled pre-push hook so `pnpm validate` runs automatically
+before every push:
+
+```bash
+git config core.hooksPath scripts/git-hooks
+```
 
 ## Deploy
 
-Trunk-based: `main` is always deployable. A release is a version tag.
-
-Automated (recommended) - **`.github/workflows/deploy.yml`** deploys to
-Cloudflare when a `v*` tag is pushed:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-Add these repository secrets (Settings -> Secrets and variables -> Actions):
-
-- `CLOUDFLARE_API_TOKEN` - create from the **"Edit Cloudflare Workers"** token
-  template, scoped to this account and the `irfankurniawan.com` zone (grants
-  Workers Scripts edit + Workers Routes edit for the custom domain).
-- `CLOUDFLARE_ACCOUNT_ID` - your Cloudflare account ID.
-
-Manual fallback (deploys from your machine using your `wrangler login`):
+Trunk-based: `main` is always deployable, and pushing to `main` triggers a
+Cloudflare Workers Builds deploy. Manual fallback from your machine:
 
 ```bash
 pnpm deploy       # nuxt build (SSR) then wrangler deploy

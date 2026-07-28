@@ -8,6 +8,7 @@ test-results
 playwright-report
 pnpm-lock.yaml
 LICENSE
+scripts/git-hooks
 docs/prompt-*.md
 docs/prompt.md
 apps/web/public/vendor

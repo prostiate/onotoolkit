@@ -1,0 +1,12 @@
+#!/bin/sh
+# Local validation gate. Runs the same checks Cloudflare Workers Builds runs,
+# so broken code never reaches `main` (and never wastes a Cloudflare build).
+#
+# Enable in this repo:  git config core.hooksPath scripts/git-hooks
+# Skip once:            git push --no-verify
+
+set -e
+
+echo "pre-push: running pnpm validate ..."
+pnpm validate
+echo "pre-push: OK"
