@@ -30,7 +30,28 @@ export default defineNuxtConfig({
           content:
             "Ono Toolkit is a suite of fast, private, in-browser tools. Your files never leave your device."
         },
-        { name: "theme-color", content: "#0891b2" }
+        { name: "theme-color", content: "#0891b2" },
+        // Open Graph / Twitter (link previews)
+        { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "Ono Toolkit" },
+        { property: "og:title", content: "Ono Toolkit - your private, in-browser toolkit" },
+        {
+          property: "og:description",
+          content:
+            "Fast developer and PDF tools that run entirely on your device - nothing is uploaded."
+        },
+        { property: "og:url", content: "https://onotoolkit.irfankurniawan.com" },
+        { property: "og:image", content: "https://onotoolkit.irfankurniawan.com/og-image.png" },
+        { property: "og:image:width", content: "1280" },
+        { property: "og:image:height", content: "640" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: "Ono Toolkit - your private, in-browser toolkit" },
+        {
+          name: "twitter:description",
+          content:
+            "Fast developer and PDF tools that run entirely on your device - nothing is uploaded."
+        },
+        { name: "twitter:image", content: "https://onotoolkit.irfankurniawan.com/og-image.png" }
       ],
       link: [{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }]
     }
