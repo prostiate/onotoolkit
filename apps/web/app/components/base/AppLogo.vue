@@ -45,7 +45,7 @@ function ringAnimate(orbit: Orbit): Record<string, number[]> | undefined {
     <Motion
       v-for="(orbit, i) in orbits"
       :key="i"
-      class="pointer-events-none absolute inset-0"
+      class="pointer-events-none absolute inset-0 z-20"
       :initial="{ rotate: orbit.start }"
       :animate="ringAnimate(orbit)"
       :transition="{ duration: orbit.duration, ease: 'linear', repeat: Infinity }"
@@ -59,7 +59,7 @@ function ringAnimate(orbit: Orbit): Record<string, number[]> | undefined {
 
     <!-- The wrench "sun" -->
     <span
-      class="text-inverted relative z-10 flex items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-cyan-600 shadow-sm ring-1 ring-cyan-500/25"
+      class="text-inverted relative z-10 flex items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 shadow-sm ring-1 ring-cyan-500/25"
       :style="{ width: `${chip}px`, height: `${chip}px` }"
     >
       <UIcon name="i-lucide-wrench" :style="{ width: `${icon}px`, height: `${icon}px` }" />

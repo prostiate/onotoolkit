@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { resolveComponent } from "vue";
+import { AnimatePresence, Motion } from "motion-v";
 import { toolGroups, getToolsByGroup } from "~/tools/registry";
 
 const NuxtLink = resolveComponent("NuxtLink");
@@ -24,6 +25,7 @@ const socials = [
 
 const open = ref(false);
 const scrolled = ref(false);
+const openMenu = ref<string | null>(null);
 
 function onScroll(): void {
   scrolled.value = window.scrollY > 6;
@@ -31,6 +33,13 @@ function onScroll(): void {
 
 function lockBody(locked: boolean): void {
   if (typeof document !== "undefined") document.body.style.overflow = locked ? "hidden" : "";
+}
+
+function onMenuBlur(event: FocusEvent, id: string): void {
+  const container = event.currentTarget as HTMLElement;
+  if (!container.contains(event.relatedTarget as Node | null) && openMenu.value === id) {
+    openMenu.value = null;
+  }
 }
 
 onMounted(() => {
@@ -42,34 +51,30 @@ onBeforeUnmount(() => {
   lockBody(false);
 });
 
-// Close the mobile menu on navigation; lock background scroll while it is open.
 watch(
   () => route.fullPath,
   () => {
     open.value = false;
+    openMenu.value = null;
   }
 );
 watch(open, (value) => lockBody(value));
 
-// Uniform nav-button width so Home / PDF / Developer / Text line up evenly.
 const navItemClass =
   "flex h-9 w-28 items-center justify-center gap-1 rounded-lg text-sm font-medium transition-colors";
 </script>
 
 <template>
   <header class="sticky top-0 z-50 px-4 pt-3">
-    <!-- Floating, fixed-width header card (not full-bleed). -->
     <div
       class="border-default bg-default/80 mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl border px-3 py-2 backdrop-blur-md transition-shadow duration-300"
       :class="scrolled ? 'shadow-xl' : 'shadow-lg'"
     >
-      <!-- Left: logo only (mobile) / full brand (desktop) -->
+      <!-- Left: logo (mobile) / full brand (desktop) -->
       <div class="col-start-1 flex items-center justify-self-start pl-1">
         <NuxtLink to="/" class="hidden items-center gap-2.5 md:flex">
           <AppLogo :size="34" />
-          <span class="text-highlighted text-[15px] font-semibold tracking-tight">
-            Ono <span class="text-primary">Toolkit</span>
-          </span>
+          <BrandTitle />
         </NuxtLink>
         <NuxtLink to="/" aria-label="Ono Toolkit" class="flex md:hidden">
           <AppLogo :size="34" />
@@ -78,82 +83,106 @@ const navItemClass =
 
       <!-- Center: title on mobile, navigation on desktop -->
       <div class="col-start-2 flex items-center justify-center">
-        <NuxtLink
-          to="/"
-          class="text-highlighted text-[15px] font-semibold tracking-tight md:hidden"
-        >
-          Ono <span class="text-primary">Toolkit</span>
+        <NuxtLink to="/" class="md:hidden">
+          <BrandTitle />
         </NuxtLink>
 
         <nav class="hidden items-center justify-center gap-1 md:flex">
-          <NuxtLink
-            to="/"
-            :class="[
-              navItemClass,
-              route.path === '/'
-                ? 'text-highlighted bg-muted'
-                : 'text-muted hover:text-highlighted hover:bg-muted'
-            ]"
-          >
-            Home
-          </NuxtLink>
-
-          <div v-for="menu in menus" :key="menu.id" class="group relative">
-            <button
-              type="button"
+          <Motion :while-hover="{ scale: 1.04 }" :while-press="{ scale: 0.96 }" class="inline-flex">
+            <NuxtLink
+              to="/"
               :class="[
                 navItemClass,
-                'text-muted hover:text-highlighted hover:bg-muted group-focus-within:text-highlighted'
+                route.path === '/'
+                  ? 'text-highlighted bg-muted'
+                  : 'text-muted hover:text-highlighted hover:bg-muted'
               ]"
-              :aria-label="`${menu.title} tools`"
             >
-              {{ menu.navLabel }}
-              <UIcon
-                name="i-lucide-chevron-down"
-                class="size-3.5 transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180"
-              />
-            </button>
+              Home
+            </NuxtLink>
+          </Motion>
 
-            <div
-              class="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 translate-y-1 pt-3 opacity-0 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100"
+          <div
+            v-for="menu in menus"
+            :key="menu.id"
+            class="relative"
+            @mouseenter="openMenu = menu.id"
+            @mouseleave="openMenu = null"
+            @focusin="openMenu = menu.id"
+            @focusout="onMenuBlur($event, menu.id)"
+          >
+            <Motion
+              :while-hover="{ scale: 1.04 }"
+              :while-press="{ scale: 0.96 }"
+              class="inline-flex"
             >
-              <div class="border-default bg-elevated w-80 rounded-xl border p-2 shadow-xl">
-                <p class="text-dimmed px-2.5 pt-1 pb-2 text-xs font-medium tracking-wide uppercase">
-                  {{ menu.description }}
-                </p>
-                <component
-                  :is="tool.route ? NuxtLink : 'div'"
-                  v-for="tool in menu.tools"
-                  :key="tool.slug"
-                  :to="tool.route ?? undefined"
-                  class="flex items-start gap-3 rounded-lg p-2.5 transition-colors"
-                  :class="tool.route ? 'hover:bg-muted cursor-pointer' : 'cursor-default'"
-                >
-                  <span
-                    class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                    :class="tool.route ? 'bg-primary/10 text-primary' : 'bg-muted text-dimmed'"
+              <button
+                type="button"
+                :class="[
+                  navItemClass,
+                  openMenu === menu.id
+                    ? 'text-highlighted bg-muted'
+                    : 'text-muted hover:text-highlighted hover:bg-muted'
+                ]"
+                :aria-label="`${menu.title} tools`"
+                :aria-expanded="openMenu === menu.id"
+              >
+                {{ menu.navLabel }}
+                <Motion :animate="{ rotate: openMenu === menu.id ? 180 : 0 }" class="flex">
+                  <UIcon name="i-lucide-chevron-down" class="size-3.5" />
+                </Motion>
+              </button>
+            </Motion>
+
+            <AnimatePresence>
+              <Motion
+                v-if="openMenu === menu.id"
+                class="absolute left-1/2 top-full z-50 -translate-x-1/2 pt-3"
+                :initial="{ opacity: 0, y: 6, scale: 0.98 }"
+                :animate="{ opacity: 1, y: 0, scale: 1 }"
+                :exit="{ opacity: 0, y: 6, scale: 0.98 }"
+                :transition="{ duration: 0.16, ease: 'easeOut' }"
+              >
+                <div class="border-default bg-elevated w-80 rounded-xl border p-2 shadow-xl">
+                  <p
+                    class="text-dimmed px-2.5 pt-1 pb-2 text-xs font-medium tracking-wide uppercase"
                   >
-                    <UIcon :name="tool.icon" class="size-4" />
-                  </span>
-                  <span class="min-w-0">
-                    <span class="flex items-center gap-1.5">
-                      <span
-                        class="text-sm font-medium"
-                        :class="tool.route ? 'text-highlighted' : 'text-muted'"
-                      >
-                        {{ tool.title }}
+                    {{ menu.description }}
+                  </p>
+                  <component
+                    :is="tool.route ? NuxtLink : 'div'"
+                    v-for="tool in menu.tools"
+                    :key="tool.slug"
+                    :to="tool.route ?? undefined"
+                    class="flex items-start gap-3 rounded-lg p-2.5 transition-colors"
+                    :class="tool.route ? 'hover:bg-muted cursor-pointer' : 'cursor-default'"
+                  >
+                    <span
+                      class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                      :class="tool.route ? 'bg-primary/10 text-primary' : 'bg-muted text-dimmed'"
+                    >
+                      <UIcon :name="tool.icon" class="size-4" />
+                    </span>
+                    <span class="min-w-0">
+                      <span class="flex items-center gap-1.5">
+                        <span
+                          class="text-sm font-medium"
+                          :class="tool.route ? 'text-highlighted' : 'text-muted'"
+                        >
+                          {{ tool.title }}
+                        </span>
+                        <UBadge v-if="!tool.route" color="neutral" variant="soft" size="xs">
+                          Soon
+                        </UBadge>
                       </span>
-                      <UBadge v-if="!tool.route" color="neutral" variant="soft" size="xs">
-                        Soon
-                      </UBadge>
+                      <span class="text-dimmed line-clamp-1 block text-xs">
+                        {{ tool.description }}
+                      </span>
                     </span>
-                    <span class="text-dimmed line-clamp-1 block text-xs">
-                      {{ tool.description }}
-                    </span>
-                  </span>
-                </component>
-              </div>
-            </div>
+                  </component>
+                </div>
+              </Motion>
+            </AnimatePresence>
           </div>
         </nav>
       </div>
@@ -162,32 +191,54 @@ const navItemClass =
       <div class="col-start-3 flex items-center gap-1 justify-self-end">
         <ThemeToggle />
         <span class="border-default mx-0.5 hidden h-5 w-px border-l sm:block" />
-        <UButton
+        <Motion
           v-for="social in socials"
           :key="social.label"
-          :to="social.to"
-          :icon="social.icon"
-          :aria-label="social.label"
-          target="_blank"
-          rel="noopener noreferrer"
-          color="neutral"
-          variant="ghost"
-          size="sm"
+          :while-hover="{ y: -2, scale: 1.15 }"
+          :while-press="{ scale: 0.85 }"
           class="hidden sm:inline-flex"
-        />
-        <UButton
-          :icon="open ? 'i-lucide-x' : 'i-lucide-menu'"
-          :aria-label="open ? 'Close menu' : 'Open menu'"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          class="md:hidden"
-          @click="open = !open"
-        />
+        >
+          <UButton
+            :to="social.to"
+            :icon="social.icon"
+            :aria-label="social.label"
+            target="_blank"
+            rel="noopener noreferrer"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+          />
+        </Motion>
+
+        <Motion
+          :while-hover="{ scale: 1.1 }"
+          :while-press="{ scale: 0.9 }"
+          class="inline-flex md:hidden"
+        >
+          <button
+            type="button"
+            class="text-muted hover:bg-muted flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg transition-colors"
+            :aria-label="open ? 'Close menu' : 'Open menu'"
+            @click="open = !open"
+          >
+            <AnimatePresence mode="wait" :initial="false">
+              <Motion
+                :key="open ? 'x' : 'menu'"
+                :initial="{ rotate: -90, opacity: 0, scale: 0.5 }"
+                :animate="{ rotate: 0, opacity: 1, scale: 1 }"
+                :exit="{ rotate: 90, opacity: 0, scale: 0.5 }"
+                :transition="{ duration: 0.2, ease: 'easeOut' }"
+                class="flex"
+              >
+                <UIcon :name="open ? 'i-lucide-x' : 'i-lucide-menu'" class="size-5" />
+              </Motion>
+            </AnimatePresence>
+          </button>
+        </Motion>
       </div>
     </div>
 
-    <!-- Mobile menu (floating card; scrolls within itself) -->
+    <!-- Mobile menu -->
     <Transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 -translate-y-2"
@@ -235,18 +286,24 @@ const navItemClass =
         </div>
 
         <div class="border-default flex items-center gap-1 border-t pt-3">
-          <UButton
+          <Motion
             v-for="social in socials"
             :key="social.label"
-            :to="social.to"
-            :icon="social.icon"
-            :aria-label="social.label"
-            target="_blank"
-            rel="noopener noreferrer"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-          />
+            :while-hover="{ y: -2, scale: 1.15 }"
+            :while-press="{ scale: 0.85 }"
+            class="inline-flex"
+          >
+            <UButton
+              :to="social.to"
+              :icon="social.icon"
+              :aria-label="social.label"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+            />
+          </Motion>
         </div>
       </div>
     </Transition>

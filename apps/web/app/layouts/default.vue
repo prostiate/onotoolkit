@@ -6,5 +6,6 @@
     </main>
     <AppFooter />
     <ConsentPopup />
+    <PlanetCursor />
   </div>
 </template>
