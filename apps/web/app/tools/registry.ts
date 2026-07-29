@@ -72,12 +72,12 @@ export const tools: readonly ToolDefinition[] = [
   {
     slug: "json-formatter",
     title: "JSON Formatter",
-    description: "Pretty-print, minify, and validate JSON.",
+    description: "Pretty-print, minify, validate, and convert JSON to YAML/CSV/XML.",
     icon: "i-lucide-braces",
     group: "developer",
-    status: "coming-soon",
+    status: "available",
     engine: "browser",
-    route: null
+    route: "/tools/json"
   },
   {
     slug: "markdown-preview",

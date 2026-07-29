@@ -42,23 +42,29 @@ and are never sent to a server.
   optional **signature verification** and **signing/generation** across
   HS/RS/PS/ES/EdDSA (HMAC secret with a Base64URL switch, or a PEM/JWK key), and
   a "Generate example" that even mints key pairs in the browser.
+- ✅ **JSON Formatter** - side-by-side [CodeMirror](https://codemirror.net/)
+  editors with inline validation: pretty-print with a 2/3/4-space or tab indent,
+  minify, recursively sort keys, and convert JSON to **YAML**, **CSV**, or
+  **XML** ([yaml](https://github.com/eemeli/yaml),
+  [json-2-csv](https://github.com/mrodrig/json-2-csv),
+  [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser)),
+  with upload, copy on both panes, and download.
 
 **Coming soon**
 
 - 🔜 Merge / Split / Rotate PDF
-- 🔜 JSON Formatter
 - 🔜 Markdown Preview
 
 Plus a considered experience: light/dark themes, mobile-first responsive
-layouts, motion.dev micro-interactions (an animated orbiting-planet logo and
-cursor), and a privacy notice with a first-visit consent popup.
+layouts, motion.dev micro-interactions (an animated orbiting-planet logo), and a
+privacy notice with a first-visit consent popup.
 
 ## Tech Stack
 
 - **[Nuxt 4](https://nuxt.com/)** (Vue 3, SSR) with **[Nuxt UI](https://ui.nuxt.com/)**
 - **[Pinia](https://pinia.vuejs.org/)** for state, **[Zod](https://zod.dev/)** for validation
 - **[motion-v](https://motion.dev/docs/vue)** for animation
-- **[jose](https://github.com/panva/jose)** (JWT), **[Ghostscript-WASM](https://github.com/jsscheller/ghostscript-wasm)** + **[pdf-lib](https://pdf-lib.js.org/)** + **[pdf.js](https://mozilla.github.io/pdf.js/)** (PDF)
+- **[jose](https://github.com/panva/jose)** (JWT), **[Ghostscript-WASM](https://github.com/jsscheller/ghostscript-wasm)** + **[pdf-lib](https://pdf-lib.js.org/)** + **[pdf.js](https://mozilla.github.io/pdf.js/)** (PDF), **[CodeMirror 6](https://codemirror.net/)** (JSON editor)
 - Heavy work runs in **Web Workers**; WASM is loaded lazily, client-side only.
 - **TypeScript** throughout (no `any`), **ESLint** + **Prettier**, **Vitest** + **Playwright**.
 
