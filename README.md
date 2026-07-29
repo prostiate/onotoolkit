@@ -32,10 +32,12 @@ and are never sent to a server.
 
 - ✅ **Compress PDF** - shrink PDFs with adjustable quality (Ghostscript-WASM),
   with a before/after page preview slider.
-- ✅ **JWT Debugger** - decode, inspect, and verify JSON Web Tokens: colored
-  token editor, decoded header/payload, claims breakdown with expiry state, and
-  optional signature verification (HS/RS/PS/ES/EdDSA, PEM or JWK, Base64URL
-  secret switch).
+- ✅ **JWT Debugger** (RFC 7519) - **Decoder** and **Encoder** tabs powered by
+  [jose](https://github.com/panva/jose): a colored token editor, decoded
+  header/payload with JSON highlighting, a claims breakdown with expiry state,
+  optional **signature verification** and **signing/generation** across
+  HS/RS/PS/ES/EdDSA (HMAC secret with a Base64URL switch, or a PEM/JWK key), and
+  a "Generate example" that even mints key pairs in the browser.
 
 **Coming soon**
 
@@ -43,7 +45,9 @@ and are never sent to a server.
 - 🔜 JSON Formatter
 - 🔜 Markdown Preview
 
-Plus: light/dark themes, mobile-first responsive design, and a privacy notice.
+Plus a considered experience: light/dark themes, mobile-first responsive
+layouts, motion.dev micro-interactions (an animated orbiting-planet logo and
+cursor), and a privacy notice with a first-visit consent popup.
 
 ## Tech Stack
 
