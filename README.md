@@ -1,5 +1,9 @@
 <div align="center">
 
+<a href="https://onotoolkit.irfankurniawan.com">
+  <img src="apps/web/public/og-image.png" alt="Ono Toolkit — your private, in-browser toolkit" width="840" />
+</a>
+
 # Ono Toolkit
 
 **A suite of small, fast, privacy-first tools that run entirely in your browser.**
