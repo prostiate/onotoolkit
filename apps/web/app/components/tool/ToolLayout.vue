@@ -1,13 +1,21 @@
 <script setup lang="ts">
-defineProps<{
-  title: string;
-  description: string;
-  icon: string;
-}>();
+withDefaults(
+  defineProps<{
+    title: string;
+    description: string;
+    icon: string;
+    wide?: boolean;
+    privacyNote?: string;
+  }>(),
+  {
+    wide: false,
+    privacyNote: "Files are processed locally in your browser and never uploaded."
+  }
+);
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-6">
+  <div class="mx-auto space-y-6" :class="wide ? 'max-w-7xl' : 'max-w-3xl'">
     <div>
       <UButton
         to="/"
@@ -37,7 +45,7 @@ defineProps<{
 
     <p class="text-dimmed flex items-center justify-center gap-1.5 text-xs">
       <UIcon name="i-lucide-lock" class="text-primary size-3.5" />
-      Files are processed locally in your browser and never uploaded.
+      {{ privacyNote }}
     </p>
   </div>
 </template>

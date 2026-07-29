@@ -60,14 +60,14 @@ export const tools: readonly ToolDefinition[] = [
     route: null
   },
   {
-    slug: "jwt-decoder",
-    title: "JWT Decoder",
-    description: "Inspect the header and payload of a JSON Web Token.",
+    slug: "jwt-debugger",
+    title: "JWT Debugger",
+    description: "Decode, verify, and generate JSON Web Tokens (RFC 7519) - all algorithms.",
     icon: "i-lucide-key-round",
     group: "developer",
-    status: "coming-soon",
+    status: "available",
     engine: "browser",
-    route: null
+    route: "/tools/jwt"
   },
   {
     slug: "json-formatter",

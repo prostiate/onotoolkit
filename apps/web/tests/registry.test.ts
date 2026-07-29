@@ -9,39 +9,46 @@ import {
 
 describe("tool registry", () => {
   it("has unique slugs", () => {
-    const slugs = tools.map((tool) => tool.slug);
+    const slugs = tools.map((t) => t.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it("references only known groups", () => {
-    const groupIds = new Set(toolGroups.map((group) => group.id));
+  it("has unique, absolute routes for tools that define them", () => {
+    const routes = tools.map((t) => t.route).filter((r): r is string => r !== null);
+    expect(new Set(routes).size).toBe(routes.length);
+    for (const route of routes) expect(route.startsWith("/")).toBe(true);
+  });
+
+  it("references only known groups and has an icon + description", () => {
+    const groupIds = new Set(toolGroups.map((g) => g.id));
     for (const tool of tools) {
       expect(groupIds.has(tool.group)).toBe(true);
+      expect(tool.icon).toMatch(/^i-lucide-/);
+      expect(tool.description.length).toBeGreaterThan(0);
     }
   });
 
-  it("exposes Compress PDF as the only available tool with a route", () => {
-    const available = getAvailableTools();
-    expect(available).toHaveLength(1);
-    expect(available[0]?.slug).toBe("compress-pdf");
-    expect(available[0]?.route).toBe("/tools/compress");
-  });
-
-  it("marks every coming-soon tool with a null route", () => {
+  it("keeps status and route consistent", () => {
     for (const tool of tools) {
-      if (tool.status === "coming-soon") {
-        expect(tool.route).toBeNull();
-      }
+      if (tool.status === "coming-soon") expect(tool.route).toBeNull();
+      if (tool.status === "available") expect(tool.route).toBeTruthy();
     }
   });
 
-  it("finds a tool by slug and returns undefined otherwise", () => {
-    expect(getToolBySlug("compress-pdf")?.title).toBe("Compress PDF");
-    expect(getToolBySlug("does-not-exist")).toBeUndefined();
+  it("exposes Compress PDF and JWT Debugger as available", () => {
+    const slugs = getAvailableTools().map((t) => t.slug);
+    expect(slugs).toContain("compress-pdf");
+    expect(slugs).toContain("jwt-debugger");
   });
 
-  it("groups tools so every tool is reachable from a group", () => {
-    const grouped = toolGroups.flatMap((group) => getToolsByGroup(group.id));
+  it("finds a tool by slug", () => {
+    expect(getToolBySlug("compress-pdf")?.route).toBe("/tools/compress");
+    expect(getToolBySlug("jwt-debugger")?.route).toBe("/tools/jwt");
+    expect(getToolBySlug("missing")).toBeUndefined();
+  });
+
+  it("reaches every tool through its group", () => {
+    const grouped = toolGroups.flatMap((g) => getToolsByGroup(g.id));
     expect(grouped).toHaveLength(tools.length);
   });
 });

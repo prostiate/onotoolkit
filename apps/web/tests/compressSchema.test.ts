@@ -6,43 +6,63 @@ import {
   compressPresetOptions,
   compressPresetSchema
 } from "~/schemas/compress";
+import { MAX_PDF_BYTES } from "~/utils/pdf";
 
-function makeFile(bytes: number, name: string, type: string): File {
-  return new File([new Uint8Array(bytes)], name, { type });
+function makeFile(size: number, name: string, type: string): File {
+  const file = new File([new Uint8Array(Math.min(size, 1024))], name, { type });
+  // Override size for boundary tests without allocating huge buffers.
+  Object.defineProperty(file, "size", { value: size });
+  return file;
 }
 
-describe("compress schemas", () => {
-  it("accepts the four known presets and rejects others", () => {
-    expect(compressPresetSchema.safeParse("ebook").success).toBe(true);
-    expect(compressPresetSchema.safeParse("screen").success).toBe(true);
+describe("preset schema + options", () => {
+  it("accepts the four presets and rejects others", () => {
+    for (const p of ["screen", "ebook", "printer", "prepress"]) {
+      expect(compressPresetSchema.safeParse(p).success).toBe(true);
+    }
     expect(compressPresetSchema.safeParse("ultra").success).toBe(false);
   });
 
-  it("uses a valid default preset with matching options", () => {
+  it("exposes four options, each with a valid value and dpi", () => {
+    expect(compressPresetOptions).toHaveLength(4);
+    for (const option of compressPresetOptions) {
+      expect(compressPresetSchema.safeParse(option.value).success).toBe(true);
+      expect(typeof option.dpi).toBe("number");
+      expect(option.label.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("has a valid default preset present in the options", () => {
     expect(compressPresetSchema.safeParse(DEFAULT_COMPRESS_PRESET).success).toBe(true);
-    const values = compressPresetOptions.map((option) => option.value);
-    expect(values).toContain(DEFAULT_COMPRESS_PRESET);
+    expect(compressPresetOptions.map((o) => o.value)).toContain(DEFAULT_COMPRESS_PRESET);
     expect(compressOptionsSchema.safeParse({ preset: DEFAULT_COMPRESS_PRESET }).success).toBe(true);
   });
+});
 
-  it("accepts a valid PDF file", () => {
-    const file = makeFile(1024, "doc.pdf", "application/pdf");
-    expect(compressFileSchema.safeParse(file).success).toBe(true);
-  });
-
-  it("accepts a PDF by extension even without a mime type", () => {
-    const file = makeFile(1024, "doc.pdf", "");
-    expect(compressFileSchema.safeParse(file).success).toBe(true);
+describe("compressFileSchema", () => {
+  it("accepts a valid PDF (by mime or by extension)", () => {
+    expect(compressFileSchema.safeParse(makeFile(2048, "a.pdf", "application/pdf")).success).toBe(
+      true
+    );
+    expect(compressFileSchema.safeParse(makeFile(2048, "a.pdf", "")).success).toBe(true);
   });
 
   it("rejects an empty file", () => {
-    const file = makeFile(0, "doc.pdf", "application/pdf");
-    const result = compressFileSchema.safeParse(file);
-    expect(result.success).toBe(false);
+    expect(compressFileSchema.safeParse(makeFile(0, "a.pdf", "application/pdf")).success).toBe(
+      false
+    );
   });
 
   it("rejects a non-PDF file", () => {
-    const file = makeFile(1024, "photo.png", "image/png");
-    expect(compressFileSchema.safeParse(file).success).toBe(false);
+    expect(compressFileSchema.safeParse(makeFile(2048, "photo.png", "image/png")).success).toBe(
+      false
+    );
+  });
+
+  it("rejects a file larger than the maximum", () => {
+    const result = compressFileSchema.safeParse(
+      makeFile(MAX_PDF_BYTES + 1, "big.pdf", "application/pdf")
+    );
+    expect(result.success).toBe(false);
   });
 });

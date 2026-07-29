@@ -21,6 +21,6 @@ export function hasPdfMagic(bytes: Uint8Array): boolean {
 
 /** Suggests a "<name>-compressed.pdf" output filename from an input name. */
 export function toCompressedFileName(name: string): string {
-  const base = name.replace(/\.pdf$/i, "").trim() || "document";
+  const base = name.trim().replace(/\.pdf$/i, "") || "document";
   return `${base}-compressed.pdf`;
 }

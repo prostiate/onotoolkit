@@ -17,6 +17,9 @@ importers:
       '@pinia/nuxt':
         specifier: ^0.11.3
         version: 0.11.3(magic-string@1.1.0)(magicast@0.5.3)(oxc-parser@0.140.0)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.40(typescript@5.9.3)))(rolldown@1.2.0)(unplugin@3.3.0(esbuild@0.28.1)(rolldown@1.2.0)(rollup@4.62.3)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)))
+      jose:
+        specifier: ^6.2.4
+        version: 6.2.4
       motion-v:
         specifier: ^1.7.1
         version: 1.10.3(@vueuse/core@14.3.0(vue@3.5.40(typescript@5.9.3)))(vue@3.5.40(typescript@5.9.3))
@@ -3962,6 +3965,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  jose@6.2.4:
+    resolution: {integrity: sha512-N8acGzVsQy6M/fjFcxtysNc4Q379TcM5dM/qKkNtsHFji88yANnXTr7BLeP75iPnFwBfQzM/jg2BZ9+HZrHCZA==}
 
   js-beautify@1.15.4:
     resolution: {integrity: sha512-9/KXeZUKKJwqCXUdBxFJ3vPh467OCckSBmYDwSK/EtV090K+iMJ7zx2S3HLVDIWFQdqMIsZWbnaGiba18aWhaA==}
@@ -10103,6 +10109,8 @@ snapshots:
       '@pkgjs/parseargs': 0.11.0
 
   jiti@2.7.0: {}
+
+  jose@6.2.4: {}
 
   js-beautify@1.15.4:
     dependencies:
