@@ -12,6 +12,8 @@ test.describe("jwt debugger", () => {
       }
     });
     await page.goto("/tools/jwt");
+    // Wait for hydration (the client-only theme toggle mounts) before interacting.
+    await page.getByRole("button", { name: /Switch to (dark|light) mode/ }).waitFor();
   });
 
   test("decoder: generates an example and verifies it", async ({ page }) => {

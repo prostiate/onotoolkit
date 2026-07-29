@@ -33,9 +33,9 @@ async function copyToken(): Promise<void> {
 </script>
 
 <template>
-  <div class="grid gap-5 lg:grid-cols-2">
+  <div class="grid gap-5 lg:grid-cols-2 lg:items-stretch">
     <!-- Left: claims + signing -->
-    <div class="space-y-5">
+    <div class="flex flex-col gap-5">
       <AppCard>
         <div class="space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -60,7 +60,7 @@ async function copyToken(): Promise<void> {
         </div>
       </AppCard>
 
-      <AppCard>
+      <AppCard class="lg:flex lg:flex-1 lg:flex-col">
         <div class="space-y-3">
           <p class="text-highlighted text-sm font-semibold">Signing key</p>
 
@@ -97,9 +97,9 @@ async function copyToken(): Promise<void> {
     </div>
 
     <!-- Right: encoded output -->
-    <div class="space-y-5">
-      <AppCard>
-        <div class="space-y-2">
+    <div class="flex flex-col gap-5">
+      <AppCard class="lg:flex lg:flex-1 lg:flex-col">
+        <div class="space-y-2 lg:flex lg:h-full lg:flex-col">
           <div class="flex items-center justify-between gap-2">
             <p class="text-highlighted text-sm font-semibold">Encoded token</p>
             <UButton
@@ -116,9 +116,13 @@ async function copyToken(): Promise<void> {
             v-if="store.token"
             :model-value="store.token"
             readonly
+            class="lg:flex-1"
             @update:model-value="() => {}"
           />
-          <p v-else class="text-muted py-6 text-center text-sm">
+          <p
+            v-else
+            class="text-muted flex py-6 text-center text-sm lg:flex-1 lg:items-center lg:justify-center"
+          >
             Fill in the claims and a signing key to produce a token.
           </p>
         </div>

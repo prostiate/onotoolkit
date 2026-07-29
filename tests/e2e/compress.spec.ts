@@ -11,6 +11,7 @@ test.describe("compress pdf", () => {
       }
     });
     await page.goto("/tools/compress");
+    await page.getByRole("button", { name: /Switch to (dark|light) mode/ }).waitFor();
   });
 
   test("selecting a preset updates the description", async ({ page }) => {

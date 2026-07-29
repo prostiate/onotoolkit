@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { AnimatePresence, Motion } from "motion-v";
+
 useSeoMeta({
   title: "JWT Debugger - Ono Toolkit",
   description:
@@ -40,7 +42,17 @@ const tabs: { value: Mode; label: string; icon: string }[] = [
       </div>
     </div>
 
-    <JwtDecoder v-if="mode === 'decode'" />
-    <JwtEncoder v-else />
+    <AnimatePresence mode="wait">
+      <Motion
+        :key="mode"
+        :initial="{ opacity: 0, y: 10 }"
+        :animate="{ opacity: 1, y: 0 }"
+        :exit="{ opacity: 0, y: -10 }"
+        :transition="{ duration: 0.18, ease: 'easeOut' }"
+      >
+        <JwtDecoder v-if="mode === 'decode'" />
+        <JwtEncoder v-else />
+      </Motion>
+    </AnimatePresence>
   </ToolLayout>
 </template>

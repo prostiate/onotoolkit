@@ -10,6 +10,7 @@ test.describe("landing page", () => {
       }
     });
     await page.goto("/");
+    await page.getByRole("button", { name: /Switch to (dark|light) mode/ }).waitFor();
   });
 
   test("shows the hero and lists available + coming-soon tools", async ({ page }) => {
@@ -22,6 +23,7 @@ test.describe("landing page", () => {
 
   test("navigates to the compress tool", async ({ page }) => {
     await page
+      .locator("main")
       .getByRole("link", { name: /Compress PDF/ })
       .first()
       .click();
@@ -31,6 +33,7 @@ test.describe("landing page", () => {
 
   test("navigates to the JWT debugger", async ({ page }) => {
     await page
+      .locator("main")
       .getByRole("link", { name: /JWT Debugger/ })
       .first()
       .click();

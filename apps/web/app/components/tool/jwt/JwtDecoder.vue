@@ -46,9 +46,9 @@ async function copyJson(value: Record<string, unknown>): Promise<void> {
 </script>
 
 <template>
-  <div class="grid gap-5 lg:grid-cols-2">
+  <div class="grid gap-5 lg:grid-cols-2 lg:items-stretch">
     <!-- Left: encoded token + verification -->
-    <div class="space-y-5">
+    <div class="flex flex-col gap-5">
       <AppCard>
         <div class="space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -101,7 +101,7 @@ async function copyJson(value: Record<string, unknown>): Promise<void> {
         </div>
       </AppCard>
 
-      <AppCard v-if="store.decoded && !store.isAlgNone">
+      <AppCard v-if="store.decoded && !store.isAlgNone" class="lg:flex lg:flex-1 lg:flex-col">
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-2">
             <p class="text-highlighted text-sm font-semibold">Verify signature</p>
@@ -160,7 +160,7 @@ async function copyJson(value: Record<string, unknown>): Promise<void> {
     </div>
 
     <!-- Right: decoded -->
-    <div class="space-y-5">
+    <div class="flex flex-col gap-5">
       <AppCard v-if="store.decoded">
         <div class="space-y-2">
           <div class="flex items-center justify-between gap-2">
@@ -178,7 +178,7 @@ async function copyJson(value: Record<string, unknown>): Promise<void> {
         </div>
       </AppCard>
 
-      <AppCard v-if="store.decoded">
+      <AppCard v-if="store.decoded" class="lg:flex lg:flex-1 lg:flex-col">
         <div class="space-y-3">
           <div class="flex items-center justify-between gap-2">
             <p class="text-highlighted text-sm font-semibold">Payload</p>
@@ -216,7 +216,10 @@ async function copyJson(value: Record<string, unknown>): Promise<void> {
         </div>
       </AppCard>
 
-      <AppCard v-if="!store.decoded && !store.decodeError">
+      <AppCard
+        v-if="!store.decoded && !store.decodeError"
+        class="lg:flex lg:flex-1 lg:items-center lg:justify-center"
+      >
         <p class="text-muted py-6 text-center text-sm">
           Paste a JWT on the left to decode its header and payload here.
         </p>

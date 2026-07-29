@@ -37,6 +37,7 @@ onBeforeUnmount(() => store.reset());
     title="Compress PDF"
     description="Shrink your PDF while keeping it readable."
     icon="i-lucide-archive"
+    wide
   >
     <div class="space-y-5">
       <AppCard v-if="store.status === 'idle' || store.status === 'error'">

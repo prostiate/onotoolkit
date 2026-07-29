@@ -17,16 +17,7 @@ withDefaults(
 <template>
   <div class="mx-auto space-y-6" :class="wide ? 'max-w-7xl' : 'max-w-3xl'">
     <div>
-      <UButton
-        to="/"
-        icon="i-lucide-arrow-left"
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        class="mb-4"
-      >
-        All tools
-      </UButton>
+      <ToolBackButton class="mb-4" />
 
       <div class="flex items-center gap-3">
         <span

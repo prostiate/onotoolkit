@@ -35,7 +35,7 @@ const sections = [
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-6">
+  <div class="mx-auto max-w-7xl space-y-6">
     <div>
       <UButton
         to="/"
