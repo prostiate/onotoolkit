@@ -34,13 +34,8 @@ const rootComponent = computed(() => (isAvailable.value ? NuxtLink : "div"));
         >
           <UIcon :name="tool.icon" class="size-6" />
         </span>
-        <UBadge
-          :color="isAvailable ? 'primary' : 'neutral'"
-          :variant="isAvailable ? 'solid' : 'soft'"
-          size="sm"
-          class="shrink-0"
-        >
-          {{ isAvailable ? "Ready" : "Coming soon" }}
+        <UBadge v-if="!isAvailable" color="neutral" variant="soft" size="sm" class="shrink-0">
+          Coming soon
         </UBadge>
       </div>
 
