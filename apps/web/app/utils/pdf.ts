@@ -30,3 +30,23 @@ export function toMergedFileName(name = "document"): string {
   const base = name.trim().replace(/\.pdf$/i, "") || "document";
   return `${base}-merged.pdf`;
 }
+
+/** Strips a trailing .pdf and falls back to "document". */
+export function pdfBaseName(name = "document"): string {
+  return name.trim().replace(/\.pdf$/i, "") || "document";
+}
+
+/** "<name>-rotated.pdf" */
+export function toRotatedFileName(name = "document"): string {
+  return `${pdfBaseName(name)}-rotated.pdf`;
+}
+
+/** "<name>-extracted.pdf" */
+export function toExtractedFileName(name = "document"): string {
+  return `${pdfBaseName(name)}-extracted.pdf`;
+}
+
+/** "<name>-split.zip" */
+export function toSplitZipName(name = "document"): string {
+  return `${pdfBaseName(name)}-split.zip`;
+}

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MergeMode } from "~/stores/merge";
 import { formatBytes } from "~/utils/formatBytes";
 import { toCompressedFileName } from "~/utils/pdf";
 
@@ -29,6 +30,11 @@ const showIntake = computed(
   () => store.status === "idle" || store.status === "ready" || store.status === "error"
 );
 
+const modeOptions: { value: MergeMode; icon: string; label: string }[] = [
+  { value: "files", icon: "i-lucide-files", label: "Whole files" },
+  { value: "pages", icon: "i-lucide-layout-grid", label: "Pages" }
+];
+
 onBeforeUnmount(() => store.reset());
 </script>
 
@@ -58,30 +64,74 @@ onBeforeUnmount(() => store.reset());
         />
 
         <template v-if="store.items.length > 0">
-          <div class="flex items-center justify-between px-1">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-1">
             <p class="text-highlighted text-sm font-semibold">
               {{ store.items.length }} file{{ store.items.length > 1 ? "s" : "" }}
               <span class="text-dimmed font-normal">· {{ formatBytes(store.totalSize) }}</span>
             </p>
-            <UButton
-              icon="i-lucide-trash-2"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              @click="store.reset()"
-            >
-              Clear all
-            </UButton>
+            <div class="flex items-center gap-2">
+              <div class="border-default flex items-center gap-0.5 rounded-lg border p-0.5">
+                <UButton
+                  v-for="option in modeOptions"
+                  :key="option.value"
+                  :icon="option.icon"
+                  size="sm"
+                  :color="store.mode === option.value ? 'primary' : 'neutral'"
+                  :variant="store.mode === option.value ? 'soft' : 'ghost'"
+                  :disabled="store.buildingPages"
+                  @click="store.setMode(option.value)"
+                >
+                  {{ option.label }}
+                </UButton>
+              </div>
+              <UButton
+                icon="i-lucide-trash-2"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                @click="store.reset()"
+              >
+                Clear all
+              </UButton>
+            </div>
           </div>
 
-          <MergeFileList
-            :items="store.items"
-            @move="store.move"
-            @remove="store.remove"
-            @reorder="store.reorder"
-          />
+          <template v-if="store.mode === 'files'">
+            <MergeFileList
+              :items="store.items"
+              @move="store.move"
+              @remove="store.remove"
+              @reorder="store.reorder"
+            />
+            <p class="text-dimmed text-xs">Drag rows, or use the arrows, to set the merge order.</p>
+          </template>
 
-          <p class="text-dimmed text-xs">Drag rows, or use the arrows, to set the merge order.</p>
+          <template v-else>
+            <AppCard v-if="store.buildingPages">
+              <div class="flex flex-col items-center gap-3 py-4 text-center">
+                <UIcon name="i-lucide-loader-circle" class="text-primary size-6 animate-spin" />
+                <p class="text-highlighted font-semibold">Loading pages...</p>
+              </div>
+            </AppCard>
+            <template v-else>
+              <PageOrganizer
+                :pages="store.pages"
+                selectable
+                rotatable
+                reorderable
+                @toggle="store.togglePage"
+                @rotate="store.rotatePage"
+                @move="store.movePage"
+                @reorder="store.reorderPages"
+                @select-all="store.selectAllPages"
+                @select-none="store.selectNonePages"
+                @request-thumb="store.ensurePageThumb"
+              />
+              <p class="text-dimmed text-xs">
+                Select, drag to reorder, and rotate individual pages across all files.
+              </p>
+            </template>
+          </template>
 
           <UButton
             color="primary"
@@ -91,7 +141,7 @@ onBeforeUnmount(() => store.reset());
             :disabled="!store.canMerge"
             @click="store.merge()"
           >
-            Merge PDFs
+            {{ store.mode === "pages" ? `Merge ${store.selectedPageCount} pages` : "Merge PDFs" }}
           </UButton>
         </template>
       </template>

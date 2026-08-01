@@ -53,6 +53,22 @@ test.describe("merge pdf", () => {
     await expect(page.getByText(/1 file/)).toBeVisible();
   });
 
+  test("merges at the page level", async ({ page }) => {
+    await page.locator('input[type="file"]').setInputFiles([SAMPLE_PDF_PATH, SAMPLE_PDF_PATH]);
+    await expect(page.getByText(/2 files/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Pages" }).click();
+    // Two 2-page samples => 4 pages, all selected.
+    await expect(page.getByText(/of 4 selected/)).toBeVisible({ timeout: 30_000 });
+
+    await page.getByRole("button", { name: /Merge 4 pages/ }).click();
+    await expect(page.getByText("Merged!")).toBeVisible({ timeout: 60_000 });
+
+    const downloadButton = page.getByRole("button", { name: "Download", exact: true });
+    const [download] = await Promise.all([page.waitForEvent("download"), downloadButton.click()]);
+    expect(download.suggestedFilename()).toMatch(/-merged\.pdf$/);
+  });
+
   test("skips a non-PDF file", async ({ page }) => {
     await page.locator('input[type="file"]').setInputFiles({
       name: "photo.png",

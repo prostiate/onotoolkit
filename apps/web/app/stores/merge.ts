@@ -1,9 +1,13 @@
 import { defineStore } from "pinia";
 import type { CompressPreset, CompressResult } from "~/types/tools";
 import type { WorkerStage } from "~/types/worker";
+import type { OrganizerPage, PdfSource } from "~/types/pdf";
 import { DEFAULT_COMPRESS_PRESET } from "~/schemas/compress";
 import { mergeFileSchema, mergeFilesSchema } from "~/schemas/merge";
 import { toMergedFileName } from "~/utils/pdf";
+
+/** Whole-document reordering, or per-page selection/reordering across files. */
+export type MergeMode = "files" | "pages";
 
 /** A PDF queued for merging, with a lazily rendered first-page thumbnail. */
 export interface MergeItem {
@@ -22,6 +26,11 @@ export type MergeStatus =
 interface MergeState {
   items: MergeItem[];
   status: MergeStatus;
+  mode: MergeMode;
+  pages: OrganizerPage[];
+  sources: PdfSource[];
+  pagesSignature: string;
+  buildingPages: boolean;
   mergedBytes: Uint8Array | null;
   mergedSize: number | null;
   mergedPageCount: number | null;
@@ -37,6 +46,11 @@ export const useMergeStore = defineStore("merge", {
   state: (): MergeState => ({
     items: [],
     status: "idle",
+    mode: "files",
+    pages: [],
+    sources: [],
+    pagesSignature: "",
+    buildingPages: false,
     mergedBytes: null,
     mergedSize: null,
     mergedPageCount: null,
@@ -50,13 +64,132 @@ export const useMergeStore = defineStore("merge", {
   getters: {
     isBusy: (state): boolean => state.status === "merging" || state.status === "compressing",
     totalSize: (state): number => state.items.reduce((sum, item) => sum + item.size, 0),
+    selectedPageCount: (state): number => state.pages.filter((page) => page.selected).length,
     canMerge(state): boolean {
-      return state.items.length >= 2 && !this.isBusy;
+      if (this.isBusy || state.buildingPages) return false;
+      if (state.mode === "pages") return state.pages.some((page) => page.selected);
+      return state.items.length >= 2;
     }
   },
   actions: {
     setPreset(preset: CompressPreset): void {
       this.preset = preset;
+    },
+    async setMode(mode: MergeMode): Promise<void> {
+      this.mode = mode;
+      if (mode === "pages") {
+        const signature = this.items.map((item) => item.id).join(",");
+        if (this.pages.length === 0 || this.pagesSignature !== signature) {
+          await this.buildPages();
+        }
+      }
+    },
+    /** Expands every page of every queued file into the organizer. */
+    async buildPages(): Promise<void> {
+      const { openSource, release } = usePdfPages();
+      for (const source of this.sources) release(source.id);
+      this.sources = [];
+      this.pages = [];
+      this.buildingPages = true;
+      try {
+        const sources: PdfSource[] = [];
+        const pages: OrganizerPage[] = [];
+        for (const item of this.items) {
+          try {
+            const source = await openSource(item.file);
+            sources.push(source);
+            for (let index = 0; index < source.pageCount; index += 1) {
+              pages.push({
+                id: `${source.id}:${index}`,
+                sourceId: source.id,
+                pageIndex: index,
+                rotation: 0,
+                selected: true,
+                thumbnail: null,
+                loading: false
+              });
+            }
+          } catch {
+            /* skip unreadable file */
+          }
+        }
+        this.sources = sources.map((source) => markRaw(source));
+        this.pages = pages;
+        this.pagesSignature = this.items.map((item) => item.id).join(",");
+      } finally {
+        this.buildingPages = false;
+      }
+    },
+    async ensurePageThumb(id: string): Promise<void> {
+      const page = this.pages.find((entry) => entry.id === id);
+      if (!page || page.thumbnail || page.loading) return;
+      page.loading = true;
+      try {
+        const { renderThumbnail } = usePdfPages();
+        page.thumbnail = await renderThumbnail(page.sourceId, page.pageIndex);
+      } catch {
+        /* leave empty */
+      } finally {
+        page.loading = false;
+      }
+    },
+    togglePage(id: string): void {
+      const page = this.pages.find((entry) => entry.id === id);
+      if (page) page.selected = !page.selected;
+    },
+    selectAllPages(): void {
+      for (const page of this.pages) page.selected = true;
+    },
+    selectNonePages(): void {
+      for (const page of this.pages) page.selected = false;
+    },
+    rotatePage(id: string, direction: -1 | 1): void {
+      const page = this.pages.find((entry) => entry.id === id);
+      if (page) page.rotation = (page.rotation + direction * 90 + 360) % 360;
+    },
+    reorderPages(fromIndex: number, toIndex: number): void {
+      if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= this.pages.length) return;
+      const clamped = Math.max(0, Math.min(toIndex, this.pages.length - 1));
+      const [page] = this.pages.splice(fromIndex, 1);
+      if (page) this.pages.splice(clamped, 0, page);
+    },
+    movePage(id: string, direction: -1 | 1): void {
+      const index = this.pages.findIndex((page) => page.id === id);
+      const to = index + direction;
+      if (index < 0 || to < 0 || to >= this.pages.length) return;
+      const [page] = this.pages.splice(index, 1);
+      if (page) this.pages.splice(to, 0, page);
+    },
+    async mergePages(): Promise<void> {
+      const selected = this.pages.filter((page) => page.selected);
+      if (selected.length === 0) {
+        this.status = "error";
+        this.errorMessage = "Select at least one page to merge.";
+        return;
+      }
+      this.status = "merging";
+      this.errorMessage = null;
+      this.clearResults();
+      try {
+        const { assemble } = usePdfBuild();
+        const bytesMap = new Map<string, Uint8Array>();
+        for (const source of this.sources) bytesMap.set(source.id, new Uint8Array(source.bytes));
+        const refs = selected.map((page) => ({
+          sourceId: page.sourceId,
+          pageIndex: page.pageIndex,
+          rotation: page.rotation
+        }));
+        const bytes = await assemble(refs, bytesMap);
+        this.mergedBytes = bytes;
+        this.mergedSize = bytes.length;
+        this.mergedPageCount = selected.length;
+        this.mergedFileName = toMergedFileName(this.items[0]?.name);
+        this.status = "merged";
+      } catch (error) {
+        this.status = "error";
+        this.errorMessage =
+          error instanceof Error ? error.message : "Something went wrong while merging.";
+      }
     },
     /** Drops merge/compress results but keeps the queued files. */
     clearResults(): void {
@@ -95,6 +228,7 @@ export const useMergeStore = defineStore("merge", {
         this.items.push(...accepted);
         if (this.status === "idle" || this.status === "error") this.status = "ready";
         void this.loadPreviews(accepted);
+        if (this.mode === "pages") void this.buildPages();
       }
       if (rejected > 0) {
         this.addError = `Skipped ${rejected} file${rejected > 1 ? "s" : ""} that ${rejected > 1 ? "are" : "is"} not a valid PDF.`;
@@ -136,9 +270,16 @@ export const useMergeStore = defineStore("merge", {
     remove(id: string): void {
       this.items = this.items.filter((item) => item.id !== id);
       if (this.items.length === 0) this.reset();
-      else if (this.status !== "idle") this.status = "ready";
+      else {
+        if (this.status !== "idle") this.status = "ready";
+        if (this.mode === "pages") void this.buildPages();
+      }
     },
     async merge(): Promise<void> {
+      if (this.mode === "pages") {
+        await this.mergePages();
+        return;
+      }
       const files = this.items.map((item) => item.file);
       const parsed = mergeFilesSchema.safeParse(files);
       if (!parsed.success) {
@@ -209,8 +350,15 @@ export const useMergeStore = defineStore("merge", {
       }
     },
     reset(): void {
+      const { release } = usePdfPages();
+      for (const source of this.sources) release(source.id);
       this.items = [];
       this.status = "idle";
+      this.mode = "files";
+      this.pages = [];
+      this.sources = [];
+      this.pagesSignature = "";
+      this.buildingPages = false;
       this.mergedBytes = null;
       this.mergedSize = null;
       this.mergedPageCount = null;

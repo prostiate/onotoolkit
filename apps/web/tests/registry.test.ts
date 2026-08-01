@@ -42,6 +42,8 @@ describe("tool registry", () => {
     expect(slugs).toContain("json-formatter");
     expect(slugs).toContain("markdown-preview");
     expect(slugs).toContain("merge-pdf");
+    expect(slugs).toContain("split-pdf");
+    expect(slugs).toContain("rotate-pdf");
   });
 
   it("finds a tool by slug", () => {
@@ -50,6 +52,8 @@ describe("tool registry", () => {
     expect(getToolBySlug("json-formatter")?.route).toBe("/tools/json");
     expect(getToolBySlug("markdown-preview")?.route).toBe("/tools/markdown");
     expect(getToolBySlug("merge-pdf")?.route).toBe("/tools/merge");
+    expect(getToolBySlug("split-pdf")?.route).toBe("/tools/split");
+    expect(getToolBySlug("rotate-pdf")?.route).toBe("/tools/rotate");
     expect(getToolBySlug("missing")).toBeUndefined();
   });
 

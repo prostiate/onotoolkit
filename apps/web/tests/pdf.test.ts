@@ -5,7 +5,10 @@ import {
   hasPdfMagic,
   hasPdfMimeType,
   toCompressedFileName,
-  toMergedFileName
+  toExtractedFileName,
+  toMergedFileName,
+  toRotatedFileName,
+  toSplitZipName
 } from "~/utils/pdf";
 
 describe("hasPdfExtension", () => {
@@ -58,6 +61,15 @@ describe("toMergedFileName", () => {
     expect(toMergedFileName("  spaced.pdf ")).toBe("spaced-merged.pdf");
     expect(toMergedFileName("")).toBe("document-merged.pdf");
     expect(toMergedFileName()).toBe("document-merged.pdf");
+  });
+});
+
+describe("output filenames", () => {
+  it("derives rotated / extracted / split names", () => {
+    expect(toRotatedFileName("report.pdf")).toBe("report-rotated.pdf");
+    expect(toExtractedFileName("report.pdf")).toBe("report-extracted.pdf");
+    expect(toSplitZipName("report.pdf")).toBe("report-split.zip");
+    expect(toRotatedFileName("")).toBe("document-rotated.pdf");
   });
 });
 

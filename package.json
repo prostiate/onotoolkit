@@ -31,6 +31,7 @@
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.12",
     "fast-xml-parser": "^5.10.1",
+    "fflate": "^0.8.3",
     "jose": "^6.2.4",
     "json-2-csv": "^5.5.11",
     "mammoth": "^1.12.0",

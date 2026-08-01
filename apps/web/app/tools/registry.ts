@@ -42,22 +42,22 @@ export const tools: readonly ToolDefinition[] = [
   {
     slug: "split-pdf",
     title: "Split PDF",
-    description: "Break one PDF into separate pages or ranges.",
+    description: "Extract pages into one PDF, or split into several as a ZIP.",
     icon: "i-lucide-scissors",
     group: "pdf",
-    status: "coming-soon",
+    status: "available",
     engine: "pdf-lib",
-    route: null
+    route: "/tools/split"
   },
   {
     slug: "rotate-pdf",
     title: "Rotate PDF",
-    description: "Turn pages to the correct orientation.",
+    description: "Turn individual pages or the whole document, then download.",
     icon: "i-lucide-rotate-cw",
     group: "pdf",
-    status: "coming-soon",
+    status: "available",
     engine: "pdf-lib",
-    route: null
+    route: "/tools/rotate"
   },
   {
     slug: "jwt-debugger",
