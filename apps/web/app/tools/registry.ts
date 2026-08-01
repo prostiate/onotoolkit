@@ -60,6 +60,46 @@ export const tools: readonly ToolDefinition[] = [
     route: "/tools/rotate"
   },
   {
+    slug: "jpg-to-pdf",
+    title: "JPG to PDF",
+    description: "Combine JPG, PNG, or WebP images into a single PDF.",
+    icon: "i-lucide-image",
+    group: "pdf",
+    status: "available",
+    engine: "pdf-lib",
+    route: "/tools/jpg-to-pdf"
+  },
+  {
+    slug: "pdf-to-jpg",
+    title: "PDF to JPG",
+    description: "Turn PDF pages into JPG images - one file or a ZIP.",
+    icon: "i-lucide-file-image",
+    group: "pdf",
+    status: "available",
+    engine: "browser",
+    route: "/tools/pdf-to-jpg"
+  },
+  {
+    slug: "html-to-pdf",
+    title: "HTML to PDF",
+    description: "Paste or upload HTML and save it as a PDF.",
+    icon: "i-lucide-code-2",
+    group: "pdf",
+    status: "available",
+    engine: "browser",
+    route: "/tools/html-to-pdf"
+  },
+  {
+    slug: "word-to-pdf",
+    title: "Word to PDF",
+    description: "Convert a Word document (DOCX) to PDF.",
+    icon: "i-lucide-file-type",
+    group: "pdf",
+    status: "available",
+    engine: "browser",
+    route: "/tools/word-to-pdf"
+  },
+  {
     slug: "jwt-debugger",
     title: "JWT Debugger",
     description: "Decode, verify, and generate JSON Web Tokens (RFC 7519) - all algorithms.",

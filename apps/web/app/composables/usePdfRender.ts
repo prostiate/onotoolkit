@@ -53,5 +53,31 @@ export function usePdfRender() {
     return { dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height };
   }
 
-  return { openDocument, renderPage };
+  /** Renders a page at a given scale and returns encoded image bytes (JPEG/PNG). */
+  async function renderPageToBytes(
+    doc: PDFDocumentProxy,
+    pageNumber: number,
+    options: { scale?: number; mimeType?: string; quality?: number } = {}
+  ): Promise<Uint8Array> {
+    const { scale = 2, mimeType = "image/jpeg", quality = 0.85 } = options;
+    const page = await doc.getPage(pageNumber);
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    const canvasContext = canvas.getContext("2d");
+    if (!canvasContext) throw new Error("Canvas 2D context is unavailable.");
+
+    await page.render({ canvas, canvasContext, viewport }).promise;
+    page.cleanup();
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, mimeType, quality)
+    );
+    if (!blob) throw new Error("Could not render the page image.");
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
+  return { openDocument, renderPage, renderPageToBytes };
 }

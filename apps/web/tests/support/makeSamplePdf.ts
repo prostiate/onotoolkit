@@ -40,7 +40,7 @@ function pngChunk(type: string, data: Uint8Array): Uint8Array {
  * trivially compress. A large image guarantees Ghostscript downsampling has
  * something meaningful to shrink.
  */
-function makeNoisePng(size: number): Uint8Array {
+export function makeNoisePng(size: number): Uint8Array {
   const rowBytes = size * 3;
   const raw = new Uint8Array((rowBytes + 1) * size);
   let seed = 0x9e3779b9;

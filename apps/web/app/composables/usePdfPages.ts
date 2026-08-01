@@ -14,7 +14,7 @@ const docRegistry = new Map<string, PDFDocumentProxy>();
  * later be assembled with pdf-lib. Nothing is uploaded.
  */
 export function usePdfPages() {
-  const { openDocument, renderPage } = usePdfRender();
+  const { openDocument, renderPage, renderPageToBytes } = usePdfRender();
 
   /** Reads a file, opens it with pdf.js, registers the doc, and returns info. */
   async function openSource(file: File): Promise<PdfSource> {
@@ -37,10 +37,21 @@ export function usePdfPages() {
     return dataUrl;
   }
 
+  /** Renders a full-resolution page image (default JPEG) from a registered source. */
+  async function renderPageImage(
+    sourceId: string,
+    pageIndex: number,
+    options: { scale?: number; mimeType?: string; quality?: number } = {}
+  ): Promise<Uint8Array> {
+    const doc = docRegistry.get(sourceId);
+    if (!doc) throw new Error("This document is no longer available.");
+    return renderPageToBytes(doc, pageIndex + 1, options);
+  }
+
   /** Forgets a source's pdf.js document (call on reset to free memory). */
   function release(sourceId: string): void {
     docRegistry.delete(sourceId);
   }
 
-  return { openSource, renderThumbnail, release };
+  return { openSource, renderThumbnail, renderPageImage, release };
 }

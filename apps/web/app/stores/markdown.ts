@@ -79,6 +79,19 @@ export const useMarkdownStore = defineStore("markdown", {
         this.busy = false;
       }
     },
+    async exportPdfDownload(): Promise<void> {
+      this.busy = true;
+      this.error = null;
+      try {
+        const { markdownToHtml, sanitizeHtml } = useMarkdownConvert();
+        const body = await sanitizeHtml(await markdownToHtml(this.markdown));
+        await usePrint().downloadPdf(body, exportFileName("pdf"));
+      } catch (error) {
+        this.fail(error);
+      } finally {
+        this.busy = false;
+      }
+    },
     async exportDocx(): Promise<void> {
       this.busy = true;
       this.error = null;

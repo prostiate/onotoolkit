@@ -44,6 +44,10 @@ describe("tool registry", () => {
     expect(slugs).toContain("merge-pdf");
     expect(slugs).toContain("split-pdf");
     expect(slugs).toContain("rotate-pdf");
+    expect(slugs).toContain("jpg-to-pdf");
+    expect(slugs).toContain("pdf-to-jpg");
+    expect(slugs).toContain("html-to-pdf");
+    expect(slugs).toContain("word-to-pdf");
   });
 
   it("finds a tool by slug", () => {

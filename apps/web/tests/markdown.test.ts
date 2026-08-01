@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   SAMPLE_MARKDOWN,
-  buildPrintDocument,
   countChars,
   countWords,
   exportFileName,
   exportMime
 } from "~/utils/markdown";
+import { buildPrintDocument } from "~/utils/print";
 
 describe("export metadata", () => {
   it("returns a file name per format", () => {

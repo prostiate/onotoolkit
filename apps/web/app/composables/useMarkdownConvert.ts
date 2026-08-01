@@ -1,5 +1,3 @@
-import { buildPrintDocument } from "~/utils/markdown";
-
 /** The single method we need from the cached markdown-it instance. */
 interface MarkdownRenderer {
   render(markdown: string): string;
@@ -72,44 +70,7 @@ export function useMarkdownConvert() {
    */
   async function printMarkdown(markdown: string, title = "Document"): Promise<void> {
     const bodyHtml = await sanitizeHtml(await markdownToHtml(markdown));
-    const doc = buildPrintDocument(bodyHtml, title);
-
-    const iframe = document.createElement("iframe");
-    iframe.setAttribute("aria-hidden", "true");
-    iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
-    document.body.appendChild(iframe);
-
-    const frameDoc = iframe.contentWindow?.document;
-    if (!frameDoc) {
-      iframe.remove();
-      throw new Error("Unable to open the print view.");
-    }
-
-    frameDoc.open();
-    frameDoc.write(doc);
-    frameDoc.close();
-
-    await new Promise<void>((resolve) => {
-      const done = (): void => {
-        const frameWindow = iframe.contentWindow;
-        if (frameWindow) {
-          frameWindow.focus();
-          frameWindow.print();
-        }
-        // Give the print dialog time to grab the document before removal.
-        setTimeout(() => {
-          iframe.remove();
-          resolve();
-        }, 500);
-      };
-      if (iframe.contentWindow?.document.readyState === "complete") done();
-      else iframe.addEventListener("load", done, { once: true });
-    });
+    await usePrint().printHtml(bodyHtml, title);
   }
 
   return { markdownToHtml, sanitizeHtml, markdownToDocxBytes, docxToMarkdown, printMarkdown };

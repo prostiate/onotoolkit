@@ -40,7 +40,16 @@ const importItems: DropdownMenuItem[] = [
 
 const exportItems: DropdownMenuItem[] = [
   { label: "Markdown (.md)", icon: "i-lucide-file-text", onSelect: () => store.exportMarkdown() },
-  { label: "PDF", icon: "i-lucide-file-down", onSelect: () => store.exportPdf() },
+  {
+    label: "PDF - Save as PDF (print)",
+    icon: "i-lucide-printer",
+    onSelect: () => store.exportPdf()
+  },
+  {
+    label: "PDF - quick download",
+    icon: "i-lucide-file-down",
+    onSelect: () => store.exportPdfDownload()
+  },
   { label: "Word (.docx)", icon: "i-lucide-file-type", onSelect: () => store.exportDocx() }
 ];
 

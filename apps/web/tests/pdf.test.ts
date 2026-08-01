@@ -6,9 +6,12 @@ import {
   hasPdfMimeType,
   toCompressedFileName,
   toExtractedFileName,
+  toImagesZipName,
   toMergedFileName,
+  toPdfFileName,
   toRotatedFileName,
-  toSplitZipName
+  toSplitZipName,
+  stripExtension
 } from "~/utils/pdf";
 
 describe("hasPdfExtension", () => {
@@ -70,6 +73,15 @@ describe("output filenames", () => {
     expect(toExtractedFileName("report.pdf")).toBe("report-extracted.pdf");
     expect(toSplitZipName("report.pdf")).toBe("report-split.zip");
     expect(toRotatedFileName("")).toBe("document-rotated.pdf");
+  });
+
+  it("strips any extension for the *-to-PDF converters", () => {
+    expect(stripExtension("photo.jpg")).toBe("photo");
+    expect(stripExtension("notes.HTML")).toBe("notes");
+    expect(stripExtension("")).toBe("document");
+    expect(toPdfFileName("photo.jpg")).toBe("photo.pdf");
+    expect(toPdfFileName("report.docx")).toBe("report.pdf");
+    expect(toImagesZipName("book.pdf")).toBe("book-jpg.zip");
   });
 });
 

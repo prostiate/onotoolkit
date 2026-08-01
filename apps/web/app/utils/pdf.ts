@@ -50,3 +50,19 @@ export function toExtractedFileName(name = "document"): string {
 export function toSplitZipName(name = "document"): string {
   return `${pdfBaseName(name)}-split.zip`;
 }
+
+/** Strips any trailing file extension; falls back to "document". */
+export function stripExtension(name = "document"): string {
+  const base = name.trim().replace(/\.[^./\\]+$/, "");
+  return base || "document";
+}
+
+/** "<name>.pdf" from any input filename (used by the *-to-PDF converters). */
+export function toPdfFileName(name = "document"): string {
+  return `${stripExtension(name)}.pdf`;
+}
+
+/** "<name>-jpg.zip" for a multi-page PDF-to-JPG export. */
+export function toImagesZipName(name = "document"): string {
+  return `${stripExtension(name)}-jpg.zip`;
+}
