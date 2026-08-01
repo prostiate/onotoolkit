@@ -63,6 +63,24 @@ export const useMarkdownStore = defineStore("markdown", {
         this.busy = false;
       }
     },
+    async importPdfFile(file: File): Promise<void> {
+      this.busy = true;
+      this.error = null;
+      try {
+        const { extractMarkdown } = usePdfExtract();
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const markdown = await extractMarkdown(bytes);
+        if (markdown.trim().length === 0) {
+          this.fail(new Error("No selectable text found - this PDF may be scanned (image-only)."));
+          return;
+        }
+        this.setMarkdown(markdown);
+      } catch (error) {
+        this.fail(error);
+      } finally {
+        this.busy = false;
+      }
+    },
     exportMarkdown(): void {
       const { download } = useDownload();
       download(this.markdown, exportFileName("md"), exportMime("md"));

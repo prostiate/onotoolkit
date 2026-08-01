@@ -12,12 +12,16 @@ const viewOptions: { value: MarkdownView; icon: string; label: string }[] = [
 
 const mdInput = ref<HTMLInputElement | null>(null);
 const docxInput = ref<HTMLInputElement | null>(null);
+const pdfInput = ref<HTMLInputElement | null>(null);
 
 function pickMarkdown(): void {
   mdInput.value?.click();
 }
 function pickDocx(): void {
   docxInput.value?.click();
+}
+function pickPdf(): void {
+  pdfInput.value?.click();
 }
 
 async function onMarkdownFile(event: Event): Promise<void> {
@@ -32,10 +36,17 @@ async function onDocxFile(event: Event): Promise<void> {
   if (file) await store.importDocxFile(file);
   input.value = "";
 }
+async function onPdfFile(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (file) await store.importPdfFile(file);
+  input.value = "";
+}
 
 const importItems: DropdownMenuItem[] = [
   { label: "Markdown (.md)", icon: "i-lucide-file-text", onSelect: () => pickMarkdown() },
-  { label: "Word (.docx)", icon: "i-lucide-file-type", onSelect: () => pickDocx() }
+  { label: "Word (.docx)", icon: "i-lucide-file-type", onSelect: () => pickDocx() },
+  { label: "PDF (best-effort)", icon: "i-lucide-file-down", onSelect: () => pickPdf() }
 ];
 
 const exportItems: DropdownMenuItem[] = [
@@ -151,6 +162,13 @@ async function copyMarkdown(): Promise<void> {
         accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         class="hidden"
         @change="onDocxFile"
+      />
+      <input
+        ref="pdfInput"
+        type="file"
+        accept=".pdf,application/pdf"
+        class="hidden"
+        @change="onPdfFile"
       />
     </div>
   </AppCard>

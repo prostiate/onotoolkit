@@ -100,6 +100,26 @@ export const tools: readonly ToolDefinition[] = [
     route: "/tools/word-to-pdf"
   },
   {
+    slug: "pdf-to-markdown",
+    title: "PDF to Markdown",
+    description: "Extract a PDF into editable Markdown, then export (best-effort).",
+    icon: "i-lucide-file-text",
+    group: "pdf",
+    status: "available",
+    engine: "browser",
+    route: "/tools/pdf-to-markdown"
+  },
+  {
+    slug: "pdf-to-word",
+    title: "PDF to Word",
+    description: "Convert a PDF into an editable Word (DOCX) document (best-effort).",
+    icon: "i-lucide-file-output",
+    group: "pdf",
+    status: "available",
+    engine: "browser",
+    route: "/tools/pdf-to-word"
+  },
+  {
     slug: "jwt-debugger",
     title: "JWT Debugger",
     description: "Decode, verify, and generate JSON Web Tokens (RFC 7519) - all algorithms.",

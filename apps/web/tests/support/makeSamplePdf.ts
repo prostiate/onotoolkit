@@ -1,5 +1,5 @@
 import { deflateSync } from "node:zlib";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -93,6 +93,25 @@ export async function makeImageHeavyPdf(imageSize = 1000, pages = 2): Promise<Ui
     page.drawImage(embedded, { x: 36, y: 96, width: 540, height: 600 });
     page.drawText(`Ono PDF sample page ${i + 1}`, { x: 36, y: 730, size: 24 });
   }
+
+  return doc.save();
+}
+
+/**
+ * Builds a text-based PDF with a large heading, a two-line paragraph, and a
+ * bulleted list, so the text-extraction (PDF -> Markdown) tools have real
+ * structure to reconstruct. Deterministic.
+ */
+export async function makeTextPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const page = doc.addPage([612, 792]);
+
+  page.drawText("Sample Heading", { x: 72, y: 700, size: 24, font });
+  page.drawText("This is the first paragraph of the document.", { x: 72, y: 660, size: 12, font });
+  page.drawText("It continues on a second line here.", { x: 72, y: 645, size: 12, font });
+  page.drawText("- First bullet point", { x: 72, y: 610, size: 12, font });
+  page.drawText("- Second bullet point", { x: 72, y: 595, size: 12, font });
 
   return doc.save();
 }
