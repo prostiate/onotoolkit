@@ -7,3 +7,4 @@ allowBuilds:
   workerd: true
   unrs-resolver: true
   vue-demi: true
+  core-js: true
