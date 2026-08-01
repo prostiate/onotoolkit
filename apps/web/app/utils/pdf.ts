@@ -24,3 +24,9 @@ export function toCompressedFileName(name: string): string {
   const base = name.trim().replace(/\.pdf$/i, "") || "document";
   return `${base}-compressed.pdf`;
 }
+
+/** Suggests a "<name>-merged.pdf" output filename from the first input name. */
+export function toMergedFileName(name = "document"): string {
+  const base = name.trim().replace(/\.pdf$/i, "") || "document";
+  return `${base}-merged.pdf`;
+}

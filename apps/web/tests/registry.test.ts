@@ -35,12 +35,13 @@ describe("tool registry", () => {
     }
   });
 
-  it("exposes Compress PDF, JWT Debugger, JSON Formatter, and Markdown Studio as available", () => {
+  it("exposes the shipped tools as available", () => {
     const slugs = getAvailableTools().map((t) => t.slug);
     expect(slugs).toContain("compress-pdf");
     expect(slugs).toContain("jwt-debugger");
     expect(slugs).toContain("json-formatter");
     expect(slugs).toContain("markdown-preview");
+    expect(slugs).toContain("merge-pdf");
   });
 
   it("finds a tool by slug", () => {
@@ -48,6 +49,7 @@ describe("tool registry", () => {
     expect(getToolBySlug("jwt-debugger")?.route).toBe("/tools/jwt");
     expect(getToolBySlug("json-formatter")?.route).toBe("/tools/json");
     expect(getToolBySlug("markdown-preview")?.route).toBe("/tools/markdown");
+    expect(getToolBySlug("merge-pdf")?.route).toBe("/tools/merge");
     expect(getToolBySlug("missing")).toBeUndefined();
   });
 

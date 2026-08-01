@@ -4,39 +4,57 @@ const props = withDefaults(
     accept?: string;
     disabled?: boolean;
     hint?: string;
+    /** Allow selecting several files at once; emits `select-files` instead of `select`. */
+    multiple?: boolean;
+    label?: string;
   }>(),
   {
     accept: "application/pdf,.pdf",
     disabled: false,
-    hint: "PDF up to 500 MB"
+    hint: "PDF up to 500 MB",
+    multiple: false,
+    label: ""
   }
 );
 
-const emit = defineEmits<{ select: [file: File] }>();
+const emit = defineEmits<{ select: [file: File]; "select-files": [files: File[]] }>();
 
 const isDragging = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
+
+const promptLabel = computed(
+  () =>
+    props.label ||
+    (props.multiple
+      ? "Drop your PDFs here, or tap to browse"
+      : "Drop your PDF here, or tap to browse")
+);
 
 function openPicker(): void {
   if (props.disabled) return;
   inputRef.value?.click();
 }
 
-function emitFirst(files: FileList | null): void {
-  const file = files?.item(0);
+function emitFiles(files: FileList | null): void {
+  if (!files || files.length === 0) return;
+  if (props.multiple) {
+    emit("select-files", Array.from(files));
+    return;
+  }
+  const file = files.item(0);
   if (file) emit("select", file);
 }
 
 function onInputChange(event: Event): void {
   const target = event.target as HTMLInputElement;
-  emitFirst(target.files);
+  emitFiles(target.files);
   target.value = "";
 }
 
 function onDrop(event: DragEvent): void {
   isDragging.value = false;
   if (props.disabled) return;
-  emitFirst(event.dataTransfer?.files ?? null);
+  emitFiles(event.dataTransfer?.files ?? null);
 }
 
 function onDragOver(): void {
@@ -64,10 +82,15 @@ function onDragOver(): void {
     >
       <UIcon name="i-lucide-upload-cloud" class="size-7" />
     </span>
-    <span class="text-highlighted text-base font-semibold">
-      Drop your PDF here, or tap to browse
-    </span>
+    <span class="text-highlighted text-base font-semibold">{{ promptLabel }}</span>
     <span class="text-dimmed text-xs">{{ hint }}</span>
-    <input ref="inputRef" type="file" class="hidden" :accept="accept" @change="onInputChange" />
+    <input
+      ref="inputRef"
+      type="file"
+      class="hidden"
+      :accept="accept"
+      :multiple="multiple"
+      @change="onInputChange"
+    />
   </button>
 </template>

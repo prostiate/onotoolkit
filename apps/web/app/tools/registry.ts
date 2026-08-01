@@ -32,12 +32,12 @@ export const tools: readonly ToolDefinition[] = [
   {
     slug: "merge-pdf",
     title: "Merge PDF",
-    description: "Combine several PDFs into a single document.",
+    description: "Combine several PDFs into one, then optionally compress the result.",
     icon: "i-lucide-combine",
     group: "pdf",
-    status: "coming-soon",
-    engine: "pdf-lib",
-    route: null
+    status: "available",
+    engine: "mixed",
+    route: "/tools/merge"
   },
   {
     slug: "split-pdf",

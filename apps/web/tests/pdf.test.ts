@@ -4,7 +4,8 @@ import {
   hasPdfExtension,
   hasPdfMagic,
   hasPdfMimeType,
-  toCompressedFileName
+  toCompressedFileName,
+  toMergedFileName
 } from "~/utils/pdf";
 
 describe("hasPdfExtension", () => {
@@ -48,6 +49,15 @@ describe("toCompressedFileName", () => {
     expect(toCompressedFileName("REPORT.PDF")).toBe("REPORT-compressed.pdf");
     expect(toCompressedFileName("  spaced.pdf ")).toBe("spaced-compressed.pdf");
     expect(toCompressedFileName("")).toBe("document-compressed.pdf");
+  });
+});
+
+describe("toMergedFileName", () => {
+  it("derives a -merged.pdf name", () => {
+    expect(toMergedFileName("report.pdf")).toBe("report-merged.pdf");
+    expect(toMergedFileName("  spaced.pdf ")).toBe("spaced-merged.pdf");
+    expect(toMergedFileName("")).toBe("document-merged.pdf");
+    expect(toMergedFileName()).toBe("document-merged.pdf");
   });
 });
 

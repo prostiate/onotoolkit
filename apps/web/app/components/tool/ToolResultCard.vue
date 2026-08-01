@@ -3,7 +3,9 @@ import { Motion } from "motion-v";
 import type { CompressResult } from "~/types/tools";
 import { formatBytes, reductionPercent } from "~/utils/formatBytes";
 
-const props = defineProps<{ result: CompressResult }>();
+const props = withDefaults(defineProps<{ result: CompressResult; resetLabel?: string }>(), {
+  resetLabel: "Compress another"
+});
 
 const emit = defineEmits<{ download: []; reset: [] }>();
 
@@ -76,7 +78,7 @@ const grew = computed(() => props.result.compressedSize >= props.result.original
             block
             @click="emit('reset')"
           >
-            Compress another
+            {{ resetLabel }}
           </UButton>
         </div>
       </div>
