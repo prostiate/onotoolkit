@@ -19,3 +19,8 @@ packages/shared/**/*.js
 
 # Docs are tracked; only the raw prompt captures are ignored.
 docs/
+
+# Local agent-skill tooling (not part of the app).
+.agents/
+.claude/
+skills-lock.json
