@@ -64,7 +64,19 @@ export const useCompressStore = defineStore("compress", {
             this.status = stage === "loading-engine" ? "preparing" : "running";
           }
         });
-        this.result = result;
+        // If Ghostscript could not shrink an already-optimized PDF (output is the
+        // same size or larger), keep the original file so the download is never
+        // bigger than what the user provided.
+        if (result.compressedSize >= result.originalSize) {
+          this.result = {
+            fileName: result.fileName,
+            originalSize: result.originalSize,
+            compressedSize: result.originalSize,
+            bytes: new Uint8Array(await file.arrayBuffer())
+          };
+        } else {
+          this.result = result;
+        }
         this.status = "done";
         this.stage = null;
       } catch (error) {
