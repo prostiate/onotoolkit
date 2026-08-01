@@ -10,7 +10,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-12">
+  <div class="mx-auto max-w-[96rem] space-y-12">
     <Motion
       :initial="{ opacity: 0, y: 16 }"
       :animate="{ opacity: 1, y: 0 }"

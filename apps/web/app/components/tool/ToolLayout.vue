@@ -15,7 +15,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="mx-auto space-y-6" :class="wide ? 'max-w-7xl' : 'max-w-3xl'">
+  <div class="mx-auto space-y-6" :class="wide ? 'max-w-[96rem]' : 'max-w-3xl'">
     <div>
       <ToolBackButton class="mb-4" />
 

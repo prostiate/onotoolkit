@@ -81,13 +81,13 @@ export const tools: readonly ToolDefinition[] = [
   },
   {
     slug: "markdown-preview",
-    title: "Markdown Preview",
-    description: "Write Markdown and see it rendered live.",
+    title: "Markdown Studio",
+    description: "Edit Markdown in a live editor and export to PDF or Word (DOCX).",
     icon: "i-lucide-file-code-2",
     group: "text",
-    status: "coming-soon",
+    status: "available",
     engine: "browser",
-    route: null
+    route: "/tools/markdown"
   }
 ] as const;
 

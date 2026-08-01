@@ -2,6 +2,8 @@ node_modules
 .nuxt
 .output
 .wrangler
+.agents
+.claude
 dist
 dist-worker*
 test-results

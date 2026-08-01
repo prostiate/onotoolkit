@@ -67,7 +67,7 @@ const navItemClass =
 <template>
   <header class="sticky top-0 z-50 px-4 pt-3">
     <div
-      class="border-default bg-default/80 mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl border px-3 py-2 backdrop-blur-md transition-shadow duration-300"
+      class="border-default bg-default/80 mx-auto grid max-w-[96rem] grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl border px-3 py-2 backdrop-blur-md transition-shadow duration-300"
       :class="scrolled ? 'shadow-xl' : 'shadow-lg'"
     >
       <!-- Left: logo (mobile) / full brand (desktop) -->
@@ -249,7 +249,7 @@ const navItemClass =
     >
       <div
         v-if="open"
-        class="border-default bg-default/95 mx-auto mt-2 max-h-[calc(100dvh-6rem)] max-w-7xl space-y-4 overflow-y-auto overscroll-contain rounded-2xl border p-4 shadow-lg backdrop-blur-md md:hidden"
+        class="border-default bg-default/95 mx-auto mt-2 max-h-[calc(100dvh-6rem)] max-w-[96rem] space-y-4 overflow-y-auto overscroll-contain rounded-2xl border p-4 shadow-lg backdrop-blur-md md:hidden"
       >
         <NuxtLink to="/" class="text-highlighted block rounded-md px-2 py-2 text-sm font-semibold">
           Home
