@@ -148,6 +148,7 @@ defineExpose({ undo, clear, getSourceImage, getMaskOverlay });
       ref="overlayCanvas"
       :width="width"
       :height="height"
+      aria-label="Drawing area: brush over the watermark to mark it for removal"
       class="absolute inset-0 h-full w-full cursor-crosshair touch-none"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"

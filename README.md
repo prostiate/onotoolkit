@@ -32,39 +32,52 @@ Your files and data never leave your device - no uploads, no accounts, no tracki
 Everything runs client-side. Files, tokens, and secrets are processed locally
 and are never sent to a server.
 
-**Available**
+### PDF
 
-- ✅ **Compress PDF** - shrink PDFs with adjustable quality (Ghostscript-WASM),
-  with a before/after page preview slider.
-- ✅ **JWT Debugger** (RFC 7519) - **Decoder** and **Encoder** tabs powered by
+- **Compress PDF** - shrink PDFs with adjustable quality (Ghostscript-WASM), with
+  a before/after page preview slider.
+- **Merge / Split / Rotate PDF** - reorder and combine, extract page ranges (one
+  PDF or a ZIP), and rotate pages, on a shared page organizer ([pdf-lib](https://pdf-lib.js.org/)).
+- **JPG to PDF** / **PDF to JPG** - combine images into a PDF, or turn pages into
+  images (single file or ZIP).
+- **HTML to PDF** / **Word to PDF** - render pasted/uploaded HTML or a DOCX to PDF.
+- **PDF to Markdown** / **PDF to Word** - extract a PDF to editable Markdown or a
+  DOCX (best-effort).
+
+### Image
+
+- **Background Remover** - erase an image background or swap in a solid colour,
+  powered by [@imgly/background-removal](https://github.com/imgly/background-removal-js)
+  running its ONNX model entirely in the browser; exports a lossless PNG.
+- **Watermark Remover** - brush over a watermark and inpaint it away with
+  [MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN) via
+  [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) (WebGPU → WASM).
+  Only the painted pixels are regenerated; every other pixel stays byte-identical.
+- **Compress Images** - batch-compress JPG, PNG, and WebP with
+  [jSquash](https://github.com/jamsinclair/jSquash) (MozJPEG, oxipng, WebP).
+  Choose the output format, keep PNG transparency (lossless oxipng or WebP) or
+  flatten it to a colour, preview before/after, and download individually or as a ZIP.
+
+### Developer
+
+- **JWT Debugger** (RFC 7519) - **Decoder** and **Encoder** tabs powered by
   [jose](https://github.com/panva/jose): a colored token editor, decoded
   header/payload with JSON highlighting, a claims breakdown with expiry state,
   optional **signature verification** and **signing/generation** across
   HS/RS/PS/ES/EdDSA (HMAC secret with a Base64URL switch, or a PEM/JWK key), and
   a "Generate example" that even mints key pairs in the browser.
-- ✅ **JSON Formatter** - side-by-side [CodeMirror](https://codemirror.net/)
-  editors with inline validation: pretty-print with a 2/3/4-space or tab indent,
-  minify, recursively sort keys, and convert JSON to **YAML**, **CSV**, or
-  **XML** ([yaml](https://github.com/eemeli/yaml),
+- **JSON Formatter** - side-by-side [CodeMirror](https://codemirror.net/) editors
+  with inline validation: pretty-print with a 2/3/4-space or tab indent, minify,
+  recursively sort keys, and convert JSON to **YAML**, **CSV**, or **XML**
+  ([yaml](https://github.com/eemeli/yaml),
   [json-2-csv](https://github.com/mrodrig/json-2-csv),
-  [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser)),
-  with upload, copy on both panes, and download.
-- ✅ **Background Remover** - erase an image background or swap in a solid colour,
-  powered by [@imgly/background-removal](https://github.com/imgly/background-removal-js)
-  running its ONNX model entirely in the browser; exports a lossless PNG.
-- ✅ **Watermark Remover** - brush over a watermark and inpaint it away with
-  [MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN) via
-  [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) (WebGPU → WASM).
-  Only the painted pixels are regenerated; every other pixel stays byte-identical.
-- ✅ **Compress Images** - batch-compress JPG, PNG, and WebP with
-  [jSquash](https://github.com/jamsinclair/jSquash) (MozJPEG, oxipng, WebP).
-  Keep PNG transparency (lossless oxipng or lossy WebP), or flatten it to a
-  colour; download individually or as a ZIP.
+  [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser)), with
+  upload, copy on both panes, and download.
 
-**Coming soon**
+### Text & Markdown
 
-- 🔜 Merge / Split / Rotate PDF
-- 🔜 Markdown Preview
+- **Markdown Studio** - edit Markdown in a live editor and export to PDF or Word
+  (DOCX).
 
 Plus a considered experience: light/dark themes, mobile-first responsive
 layouts, motion.dev micro-interactions (an animated orbiting-planet logo), and a

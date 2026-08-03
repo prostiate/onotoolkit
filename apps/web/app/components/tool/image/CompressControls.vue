@@ -38,13 +38,14 @@ const showBgColor = computed(() => props.settings.format === "jpeg" && props.sho
   <AppCard>
     <div class="space-y-5">
       <!-- Output format -->
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="text-muted w-28 shrink-0 text-xs font-medium">Output format</label>
+      <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Output format">
+        <span class="text-muted w-28 shrink-0 text-xs font-medium">Output format</span>
         <UButton
           v-for="option in formats"
           :key="option.value"
           :color="settings.format === option.value ? 'primary' : 'neutral'"
           :variant="settings.format === option.value ? 'solid' : 'outline'"
+          :aria-pressed="settings.format === option.value"
           size="sm"
           @click="emit('update:format', option.value)"
         >
@@ -61,6 +62,7 @@ const showBgColor = computed(() => props.settings.format === "jpeg" && props.sho
           :min="30"
           :max="100"
           :step="1"
+          aria-label="Compression quality"
           class="flex-1"
           @update:model-value="emit('update:quality', ($event as number) ?? settings.quality)"
         />

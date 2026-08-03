@@ -17,6 +17,7 @@ const emit = defineEmits<{
         :min="8"
         :max="120"
         :step="1"
+        aria-label="Brush size"
         class="flex-1"
         @update:model-value="emit('update:brushSize', ($event as number) ?? brushSize)"
       />

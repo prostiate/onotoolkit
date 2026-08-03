@@ -27,13 +27,14 @@ const presets = [
 
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Background">
       <UButton
         v-for="option in modes"
         :key="option.value"
         :icon="option.icon"
         :color="mode === option.value ? 'primary' : 'neutral'"
         :variant="mode === option.value ? 'solid' : 'outline'"
+        :aria-pressed="mode === option.value"
         size="sm"
         @click="emit('update:mode', option.value)"
       >

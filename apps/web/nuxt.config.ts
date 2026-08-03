@@ -37,6 +37,16 @@ export default defineNuxtConfig({
       preset: "cloudflare_module"
     }
   },
+  nitro: {
+    // Cloudflare Workers support modern JS; pin esbuild to es2022 so BigInt
+    // literals in dependencies (e.g. Nuxt UI's useFieldGroup) aren't flagged as
+    // unsupported for the default es2019 target during the Worker build.
+    esbuild: {
+      options: {
+        target: "es2022"
+      }
+    }
+  },
   colorMode: {
     preference: "light",
     fallback: "light",
