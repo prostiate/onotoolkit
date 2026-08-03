@@ -194,8 +194,6 @@ export interface CompressSettings {
   quality: number;
   /** "original" keeps the source codec; "webp" re-encodes everything to WebP. */
   format: "original" | "webp";
-  /** Keep PNGs as lossless PNG (oxipng). When false, PNGs go to lossy WebP. */
-  pngLossless: boolean;
   /** Flatten transparent PNGs onto a solid colour and save as JPEG. */
   flattenTransparent: boolean;
   /** Background colour (hex) used when flattening. */
@@ -221,9 +219,10 @@ export function decideOutput(
 ): OutputPlan {
   if (settings.format === "webp") return { format: "webp", flatten: false };
   if (input === "jpeg") return { format: "jpeg", flatten: false };
-  // PNG, WebP, or unknown input keeping its "original" (lossless-capable) lane.
+  // Keeping the original format: transparent images may be flattened to JPEG on
+  // request; WebP stays WebP; everything else stays (lossless) PNG. There is no
+  // lossy-PNG codec, so lossy savings come from choosing the WebP output format.
   if (hasAlpha && settings.flattenTransparent) return { format: "jpeg", flatten: true };
   if (input === "webp") return { format: "webp", flatten: false };
-  if (settings.pngLossless) return { format: "png", flatten: false };
-  return { format: "webp", flatten: false };
+  return { format: "png", flatten: false };
 }

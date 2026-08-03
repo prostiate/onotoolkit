@@ -3,7 +3,9 @@ import type { CompressItem } from "~/stores/compressImage";
 import { formatBytes, reductionPercent } from "~/utils/formatBytes";
 
 const props = defineProps<{ item: CompressItem }>();
-const emit = defineEmits<{ remove: [id: string]; download: [id: string] }>();
+const emit = defineEmits<{ remove: [id: string]; download: [id: string]; preview: [id: string] }>();
+
+const canPreview = computed(() => props.item.status === "done" && props.item.resultUrl !== null);
 
 const saved = computed(() => reductionPercent(props.item.originalSize, props.item.resultSize));
 const grew = computed(
@@ -13,11 +15,22 @@ const grew = computed(
 
 <template>
   <div class="border-default bg-default flex items-center gap-3 rounded-lg border p-2.5">
-    <div
-      class="bg-muted flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded"
+    <component
+      :is="canPreview ? 'button' : 'div'"
+      :type="canPreview ? 'button' : undefined"
+      class="bg-muted group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded"
+      :class="canPreview ? 'hover:ring-primary/40 cursor-zoom-in hover:ring-2' : ''"
+      :aria-label="canPreview ? `Preview before and after for ${item.name}` : undefined"
+      @click="canPreview && emit('preview', item.id)"
     >
       <img :src="item.previewUrl" alt="" class="max-h-full max-w-full object-contain" />
-    </div>
+      <span
+        v-if="canPreview"
+        class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+      >
+        <UIcon name="i-lucide-eye" class="size-4 text-white" />
+      </span>
+    </component>
 
     <div class="min-w-0 flex-1">
       <p class="text-highlighted truncate text-sm font-medium">{{ item.name }}</p>

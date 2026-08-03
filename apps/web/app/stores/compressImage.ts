@@ -40,7 +40,6 @@ export const useCompressImageStore = defineStore("compressImage", {
     settings: {
       quality: 75,
       format: "original",
-      pngLossless: true,
       flattenTransparent: false,
       flattenColor: "#ffffff"
     },
@@ -105,10 +104,6 @@ export const useCompressImageStore = defineStore("compressImage", {
       this.settings.format = format;
       this.onSettingsChanged();
     },
-    setPngLossless(value: boolean): void {
-      this.settings.pngLossless = value;
-      this.onSettingsChanged();
-    },
     setFlattenTransparent(value: boolean): void {
       this.settings.flattenTransparent = value;
       this.onSettingsChanged();
@@ -166,7 +161,6 @@ export const useCompressImageStore = defineStore("compressImage", {
       this.settings = {
         quality: 75,
         format: "original",
-        pngLossless: true,
         flattenTransparent: false,
         flattenColor: "#ffffff"
       };

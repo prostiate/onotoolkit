@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DropdownMenuItem } from "@nuxt/ui";
+import type { CompressItem } from "~/stores/compressImage";
 import type { CompressSettings } from "~/utils/image";
 import { formatBytes, reductionPercent } from "~/utils/formatBytes";
 
@@ -11,6 +13,17 @@ useSeoMeta({
 const store = useCompressImageStore();
 const { downloadBlob, download } = useFileDownload();
 
+const previewId = ref<string | null>(null);
+const previewItem = computed<CompressItem | null>(
+  () => store.items.find((item) => item.id === previewId.value) ?? null
+);
+const previewOpen = computed({
+  get: () => previewId.value !== null,
+  set: (value: boolean) => {
+    if (!value) previewId.value = null;
+  }
+});
+
 function onSelectFiles(files: File[]): void {
   store.addFiles(files);
 }
@@ -18,13 +31,18 @@ function onDownload(id: string): void {
   const item = store.items.find((entry) => entry.id === id);
   if (item?.resultBlob) downloadBlob(item.resultBlob, item.resultName);
 }
-async function onDownloadAll(): Promise<void> {
-  const done = store.items.filter((item) => item.resultBlob);
-  if (done.length === 0) return;
+function onPreview(id: string): void {
+  previewId.value = id;
+}
+
+const doneItems = computed(() => store.items.filter((item) => item.resultBlob));
+
+async function onDownloadZip(): Promise<void> {
+  if (doneItems.value.length === 0) return;
   const { zip } = useZip();
   const entries: Record<string, Uint8Array> = {};
   const seen = new Map<string, number>();
-  for (const item of done) {
+  for (const item of doneItems.value) {
     // De-dupe identical output names within the ZIP.
     const count = seen.get(item.resultName) ?? 0;
     seen.set(item.resultName, count + 1);
@@ -34,6 +52,25 @@ async function onDownloadAll(): Promise<void> {
   }
   download(await zip(entries), "compressed-images.zip", "application/zip");
 }
+
+/** Saves each compressed file separately (browsers may prompt once). */
+async function onDownloadSeparate(): Promise<void> {
+  for (const item of doneItems.value) {
+    if (!item.resultBlob) continue;
+    downloadBlob(item.resultBlob, item.resultName);
+    // Small gap so the browser doesn't drop rapid successive downloads.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+}
+
+const downloadItems = computed<DropdownMenuItem[]>(() => [
+  { label: "As ZIP", icon: "i-lucide-file-archive", onSelect: () => void onDownloadZip() },
+  {
+    label: "Separate files",
+    icon: "i-lucide-files",
+    onSelect: () => void onDownloadSeparate()
+  }
+]);
 
 const totalSaved = computed(() => reductionPercent(store.totalOriginalSize, store.totalResultSize));
 
@@ -87,12 +124,16 @@ onBeforeUnmount(() => store.reset());
           :show-transparency="store.hasTransparentCandidate"
           @update:quality="store.setQuality"
           @update:format="(v: CompressSettings['format']) => store.setFormat(v)"
-          @update:png-lossless="store.setPngLossless"
           @update:flatten-transparent="store.setFlattenTransparent"
           @update:flatten-color="store.setFlattenColor"
         />
 
-        <CompressFileList :items="store.items" @remove="store.remove" @download="onDownload" />
+        <CompressFileList
+          :items="store.items"
+          @remove="store.remove"
+          @download="onDownload"
+          @preview="onPreview"
+        />
 
         <UButton
           v-if="store.status !== 'done'"
@@ -129,21 +170,24 @@ onBeforeUnmount(() => store.reset());
               </div>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row">
-              <UButton
-                color="primary"
-                icon="i-lucide-download"
-                size="lg"
-                block
-                @click="onDownloadAll()"
-              >
-                Download all (ZIP)
-              </UButton>
+              <UDropdownMenu :items="downloadItems" class="sm:flex-1">
+                <UButton
+                  color="primary"
+                  icon="i-lucide-download"
+                  trailing-icon="i-lucide-chevron-down"
+                  size="lg"
+                  block
+                >
+                  Download all
+                </UButton>
+              </UDropdownMenu>
               <UButton
                 color="neutral"
                 variant="outline"
                 icon="i-lucide-rotate-ccw"
                 size="lg"
                 block
+                class="sm:flex-1"
                 @click="store.reset()"
               >
                 Start over
@@ -152,6 +196,8 @@ onBeforeUnmount(() => store.reset());
           </div>
         </AppCard>
       </template>
+
+      <CompressPreviewModal v-model:open="previewOpen" :item="previewItem" />
     </div>
   </ToolLayout>
 </template>

@@ -2,7 +2,11 @@
 import type { CompressItem } from "~/stores/compressImage";
 
 defineProps<{ items: CompressItem[] }>();
-const emit = defineEmits<{ remove: [id: string]; download: [id: string] }>();
+const emit = defineEmits<{
+  remove: [id: string];
+  download: [id: string];
+  preview: [id: string];
+}>();
 </script>
 
 <template>
@@ -13,6 +17,7 @@ const emit = defineEmits<{ remove: [id: string]; download: [id: string] }>();
       :item="item"
       @remove="emit('remove', $event)"
       @download="emit('download', $event)"
+      @preview="emit('preview', $event)"
     />
   </div>
 </template>

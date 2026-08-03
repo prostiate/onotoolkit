@@ -171,7 +171,6 @@ describe("decideOutput", () => {
   const base: CompressSettings = {
     quality: 75,
     format: "original",
-    pngLossless: true,
     flattenTransparent: false,
     flattenColor: "#ffffff"
   };
@@ -213,11 +212,10 @@ describe("decideOutput", () => {
     });
   });
 
-  it("sends lossy PNGs to WebP when PNG lossless is off", () => {
-    expect(decideOutput("png", true, { ...base, pngLossless: false })).toEqual({
-      format: "webp",
-      flatten: false
-    });
+  it("keeps a PNG as PNG in original mode regardless of alpha", () => {
+    // Regression: "Keep original" must never silently emit WebP for a PNG.
+    expect(decideOutput("png", true, base).format).toBe("png");
+    expect(decideOutput("png", false, base).format).toBe("png");
   });
 
   it("keeps WebP input as WebP in original mode", () => {

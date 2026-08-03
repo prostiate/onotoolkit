@@ -5,7 +5,6 @@ defineProps<{ settings: CompressSettings; showTransparency: boolean }>();
 const emit = defineEmits<{
   "update:quality": [value: number];
   "update:format": [value: CompressSettings["format"]];
-  "update:pngLossless": [value: boolean];
   "update:flattenTransparent": [value: boolean];
   "update:flattenColor": [value: string];
 }>();
@@ -36,7 +35,7 @@ const formats: { value: CompressSettings["format"]; label: string }[] = [
           {{
             settings.format === "webp"
               ? "Smaller files, keeps transparency."
-              : "JPEG stays JPEG, PNG stays PNG."
+              : "JPEG stays JPEG; PNG stays lossless PNG. Choose WebP for smaller lossy files."
           }}
         </span>
       </div>
@@ -53,25 +52,6 @@ const formats: { value: CompressSettings["format"]; label: string }[] = [
           @update:model-value="emit('update:quality', ($event as number) ?? settings.quality)"
         />
         <span class="text-dimmed w-8 text-right text-xs tabular-nums">{{ settings.quality }}</span>
-      </div>
-
-      <!-- PNG lossless (only when keeping original format) -->
-      <div v-if="settings.format === 'original' && showTransparency" class="flex items-start gap-3">
-        <label class="text-muted w-28 shrink-0 pt-0.5 text-xs font-medium">PNG mode</label>
-        <div class="space-y-2">
-          <USwitch
-            :model-value="settings.pngLossless"
-            label="Lossless (keeps transparency)"
-            @update:model-value="emit('update:pngLossless', $event)"
-          />
-          <p class="text-dimmed text-xs">
-            {{
-              settings.pngLossless
-                ? "PNGs are optimised losslessly with oxipng."
-                : "PNGs are re-encoded as lossy WebP (transparency kept, much smaller)."
-            }}
-          </p>
-        </div>
       </div>
 
       <!-- Flatten transparency (only when keeping original format) -->
