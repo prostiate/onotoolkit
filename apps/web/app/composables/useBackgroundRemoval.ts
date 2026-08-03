@@ -31,6 +31,9 @@ export function useBackgroundRemoval() {
     file: File | Blob,
     onProgress?: (progress: BackgroundRemovalProgress) => void
   ): Promise<BackgroundRemovalResult> {
+    if (import.meta.server) {
+      throw new Error("Background removal is only available in the browser.");
+    }
     const { removeBackground: imglyRemoveBackground } = await import("@imgly/background-removal");
 
     const blob = await imglyRemoveBackground(file, {

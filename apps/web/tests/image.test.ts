@@ -168,57 +168,46 @@ describe("format helpers", () => {
 });
 
 describe("decideOutput", () => {
-  const base: CompressSettings = {
-    quality: 75,
-    format: "original",
-    flattenTransparent: false,
-    flattenColor: "#ffffff"
-  };
+  const base: CompressSettings = { quality: 75, format: "original", bgColor: "#ffffff" };
 
-  it("re-encodes everything to WebP when format is 'webp'", () => {
-    expect(decideOutput("jpeg", false, { ...base, format: "webp" })).toEqual({
-      format: "webp",
-      flatten: false
+  describe("original mode keeps the source codec", () => {
+    it("keeps JPEG input as JPEG", () => {
+      expect(decideOutput("jpeg", false, base)).toEqual({ format: "jpeg", flatten: false });
     });
-    expect(decideOutput("png", true, { ...base, format: "webp" })).toEqual({
-      format: "webp",
-      flatten: false
+    it("keeps a PNG as PNG regardless of alpha (regression: never silent WebP)", () => {
+      expect(decideOutput("png", true, base)).toEqual({ format: "png", flatten: false });
+      expect(decideOutput("png", false, base)).toEqual({ format: "png", flatten: false });
     });
-  });
-
-  it("keeps JPEG input as JPEG", () => {
-    expect(decideOutput("jpeg", false, base)).toEqual({ format: "jpeg", flatten: false });
-  });
-
-  it("keeps opaque PNG as lossless PNG", () => {
-    expect(decideOutput("png", false, base)).toEqual({ format: "png", flatten: false });
-  });
-
-  it("keeps transparent PNG as lossless PNG by default", () => {
-    expect(decideOutput("png", true, base)).toEqual({ format: "png", flatten: false });
-  });
-
-  it("flattens a transparent PNG to JPEG when requested", () => {
-    expect(decideOutput("png", true, { ...base, flattenTransparent: true })).toEqual({
-      format: "jpeg",
-      flatten: true
+    it("keeps WebP input as WebP", () => {
+      expect(decideOutput("webp", true, base)).toEqual({ format: "webp", flatten: false });
+    });
+    it("falls back to PNG for unknown input types", () => {
+      expect(decideOutput("other", true, base)).toEqual({ format: "png", flatten: false });
     });
   });
 
-  it("does not flatten an opaque PNG even if flatten is on", () => {
-    expect(decideOutput("png", false, { ...base, flattenTransparent: true })).toEqual({
-      format: "png",
-      flatten: false
+  describe("explicit target format", () => {
+    it("targets PNG (lossless, keeps alpha)", () => {
+      expect(decideOutput("jpeg", false, { ...base, format: "png" })).toEqual({
+        format: "png",
+        flatten: false
+      });
     });
-  });
-
-  it("keeps a PNG as PNG in original mode regardless of alpha", () => {
-    // Regression: "Keep original" must never silently emit WebP for a PNG.
-    expect(decideOutput("png", true, base).format).toBe("png");
-    expect(decideOutput("png", false, base).format).toBe("png");
-  });
-
-  it("keeps WebP input as WebP in original mode", () => {
-    expect(decideOutput("webp", true, base)).toEqual({ format: "webp", flatten: false });
+    it("targets WebP without flattening (keeps alpha)", () => {
+      expect(decideOutput("png", true, { ...base, format: "webp" })).toEqual({
+        format: "webp",
+        flatten: false
+      });
+    });
+    it("flattens to JPEG only when the image has alpha", () => {
+      expect(decideOutput("png", true, { ...base, format: "jpeg" })).toEqual({
+        format: "jpeg",
+        flatten: true
+      });
+      expect(decideOutput("png", false, { ...base, format: "jpeg" })).toEqual({
+        format: "jpeg",
+        flatten: false
+      });
+    });
   });
 });

@@ -124,8 +124,7 @@ onBeforeUnmount(() => store.reset());
           :show-transparency="store.hasTransparentCandidate"
           @update:quality="store.setQuality"
           @update:format="(v: CompressSettings['format']) => store.setFormat(v)"
-          @update:flatten-transparent="store.setFlattenTransparent"
-          @update:flatten-color="store.setFlattenColor"
+          @update:bg-color="store.setBgColor"
         />
 
         <CompressFileList

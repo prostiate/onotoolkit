@@ -102,4 +102,22 @@ test.describe("compress images", () => {
     ]);
     expect(download.suggestedFilename()).toMatch(/\.webp$/);
   });
+
+  test("targets an explicit JPEG output", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([{ name: "photo.png", mimeType: "image/png", buffer: png }]);
+
+    await page.getByRole("button", { name: "JPEG", exact: true }).click();
+    await page.getByRole("button", { name: "Compress images" }).click();
+
+    await expect(page.getByText(/Compressed 1 of 1/)).toBeVisible({ timeout: 90_000 });
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download compressed image" }).click()
+    ]);
+    expect(download.suggestedFilename()).toMatch(/\.jpg$/);
+  });
 });

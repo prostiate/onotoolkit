@@ -1,18 +1,37 @@
 <script setup lang="ts">
-import type { CompressSettings } from "~/utils/image";
+import type { CompressSettings, OutputFormatChoice } from "~/utils/image";
 
-defineProps<{ settings: CompressSettings; showTransparency: boolean }>();
+const props = defineProps<{ settings: CompressSettings; showTransparency: boolean }>();
 const emit = defineEmits<{
   "update:quality": [value: number];
-  "update:format": [value: CompressSettings["format"]];
-  "update:flattenTransparent": [value: boolean];
-  "update:flattenColor": [value: string];
+  "update:format": [value: OutputFormatChoice];
+  "update:bgColor": [value: string];
 }>();
 
-const formats: { value: CompressSettings["format"]; label: string }[] = [
-  { value: "original", label: "Keep original" },
+const formats: { value: OutputFormatChoice; label: string }[] = [
+  { value: "original", label: "Original" },
+  { value: "jpeg", label: "JPEG" },
+  { value: "png", label: "PNG" },
   { value: "webp", label: "WebP" }
 ];
+
+const hint = computed(() => {
+  switch (props.settings.format) {
+    case "jpeg":
+      return "Lossy JPEG. Transparent images are flattened onto the background colour.";
+    case "png":
+      return "Lossless PNG (oxipng) - keeps transparency.";
+    case "webp":
+      return "Lossy WebP - smaller files, keeps transparency.";
+    default:
+      return "Keep each file's format: JPEG→JPEG, PNG→PNG (lossless), WebP→WebP.";
+  }
+});
+
+// Quality has no effect on a pure-PNG output.
+const showQuality = computed(() => props.settings.format !== "png");
+// A JPEG target needs a background colour only when transparency is in play.
+const showBgColor = computed(() => props.settings.format === "jpeg" && props.showTransparency);
 </script>
 
 <template>
@@ -31,17 +50,11 @@ const formats: { value: CompressSettings["format"]; label: string }[] = [
         >
           {{ option.label }}
         </UButton>
-        <span class="text-dimmed text-xs">
-          {{
-            settings.format === "webp"
-              ? "Smaller files, keeps transparency."
-              : "JPEG stays JPEG; PNG stays lossless PNG. Choose WebP for smaller lossy files."
-          }}
-        </span>
       </div>
+      <p class="text-dimmed -mt-3 pl-28 text-xs">{{ hint }}</p>
 
       <!-- Quality (lossy JPEG/WebP encodes) -->
-      <div class="flex items-center gap-3">
+      <div v-if="showQuality" class="flex items-center gap-3">
         <label class="text-muted w-28 shrink-0 text-xs font-medium">Quality</label>
         <USlider
           :model-value="settings.quality"
@@ -54,26 +67,17 @@ const formats: { value: CompressSettings["format"]; label: string }[] = [
         <span class="text-dimmed w-8 text-right text-xs tabular-nums">{{ settings.quality }}</span>
       </div>
 
-      <!-- Flatten transparency (only when keeping original format) -->
-      <div v-if="settings.format === 'original' && showTransparency" class="flex items-start gap-3">
-        <label class="text-muted w-28 shrink-0 pt-0.5 text-xs font-medium">Transparency</label>
-        <div class="space-y-2">
-          <USwitch
-            :model-value="settings.flattenTransparent"
-            label="Flatten onto a colour (saves as JPEG)"
-            @update:model-value="emit('update:flattenTransparent', $event)"
-          />
-          <div v-if="settings.flattenTransparent" class="flex items-center gap-2">
-            <span class="text-muted text-xs">Background</span>
-            <input
-              type="color"
-              :value="settings.flattenColor"
-              class="border-default h-7 w-9 cursor-pointer rounded border bg-transparent p-0"
-              aria-label="Flatten background colour"
-              @input="emit('update:flattenColor', ($event.target as HTMLInputElement).value)"
-            />
-          </div>
-        </div>
+      <!-- Background colour for JPEG flattening -->
+      <div v-if="showBgColor" class="flex items-center gap-3">
+        <label class="text-muted w-28 shrink-0 text-xs font-medium">Background</label>
+        <input
+          type="color"
+          :value="settings.bgColor"
+          class="border-default h-7 w-9 cursor-pointer rounded border bg-transparent p-0"
+          aria-label="JPEG background colour for transparent images"
+          @input="emit('update:bgColor', ($event.target as HTMLInputElement).value)"
+        />
+        <span class="text-dimmed text-xs">Used where transparent pixels become opaque.</span>
       </div>
     </div>
   </AppCard>

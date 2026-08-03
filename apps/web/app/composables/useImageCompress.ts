@@ -33,6 +33,7 @@ export function useImageCompress() {
     format: ImageFormat,
     quality: number
   ): Promise<ArrayBuffer> {
+    if (import.meta.server) throw new Error("Image compression is only available in the browser.");
     if (format === "jpeg") {
       const { encode: encodeJpeg } = await import("@jsquash/jpeg");
       return encodeJpeg(imageData, { quality });
@@ -53,7 +54,7 @@ export function useImageCompress() {
     const hasAlpha = input === "jpeg" ? false : imageHasAlpha(rgba);
     const plan = decideOutput(input, hasAlpha, settings);
 
-    const source = plan.flatten ? flattenOntoColor(rgba, hexToRgb(settings.flattenColor)) : rgba;
+    const source = plan.flatten ? flattenOntoColor(rgba, hexToRgb(settings.bgColor)) : rgba;
     const buffer = await encode(toImageData(source), plan.format, settings.quality);
 
     return {

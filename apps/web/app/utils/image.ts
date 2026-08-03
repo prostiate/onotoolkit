@@ -188,16 +188,17 @@ export function formatExtension(format: ImageFormat): string {
   return format === "jpeg" ? "jpg" : format;
 }
 
+/** Output format the user can target. "original" keeps the source codec. */
+export type OutputFormatChoice = "original" | ImageFormat;
+
 /** User-chosen compression settings that drive {@link decideOutput}. */
 export interface CompressSettings {
   /** 0-100, applies to lossy JPEG/WebP encodes. */
   quality: number;
-  /** "original" keeps the source codec; "webp" re-encodes everything to WebP. */
-  format: "original" | "webp";
-  /** Flatten transparent PNGs onto a solid colour and save as JPEG. */
-  flattenTransparent: boolean;
-  /** Background colour (hex) used when flattening. */
-  flattenColor: string;
+  /** Target output codec, or "original" to keep each image's source codec. */
+  format: OutputFormatChoice;
+  /** Background colour (hex) used to flatten transparency when encoding JPEG. */
+  bgColor: string;
 }
 
 /** The concrete encode plan for one image. */
@@ -217,12 +218,9 @@ export function decideOutput(
   hasAlpha: boolean,
   settings: CompressSettings
 ): OutputPlan {
-  if (settings.format === "webp") return { format: "webp", flatten: false };
-  if (input === "jpeg") return { format: "jpeg", flatten: false };
-  // Keeping the original format: transparent images may be flattened to JPEG on
-  // request; WebP stays WebP; everything else stays (lossless) PNG. There is no
-  // lossy-PNG codec, so lossy savings come from choosing the WebP output format.
-  if (hasAlpha && settings.flattenTransparent) return { format: "jpeg", flatten: true };
-  if (input === "webp") return { format: "webp", flatten: false };
-  return { format: "png", flatten: false };
+  // "original" keeps the source codec (unknown types fall back to lossless PNG).
+  const target: ImageFormat =
+    settings.format === "original" ? (input === "other" ? "png" : input) : settings.format;
+  // JPEG can't carry alpha, so a transparent image targeting JPEG is flattened.
+  return { format: target, flatten: target === "jpeg" && hasAlpha };
 }

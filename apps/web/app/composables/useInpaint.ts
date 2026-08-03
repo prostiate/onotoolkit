@@ -92,6 +92,7 @@ export function useInpaint() {
     if (sessionPromise) return sessionPromise;
 
     sessionPromise = (async () => {
+      if (import.meta.server) throw new Error("Inpainting is only available in the browser.");
       const ort = await import("onnxruntime-web");
       ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
       ort.env.wasm.numThreads = 1;
@@ -132,6 +133,7 @@ export function useInpaint() {
     if (image.width !== overlay.width || image.height !== overlay.height) {
       throw new Error("The brush layer and image dimensions must match.");
     }
+    if (import.meta.server) throw new Error("Inpainting is only available in the browser.");
     const ort = await import("onnxruntime-web");
     const session = await ensureSession(onProgress);
 

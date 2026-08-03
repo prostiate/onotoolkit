@@ -43,6 +43,10 @@ export default defineNuxtConfig({
     classSuffix: "",
     storageKey: "ono-toolkit-color-mode"
   },
+  // Source maps for the heavy client-only ML/codec chunks roughly double build
+  // memory and are unnecessary in production - disabling them keeps the Nitro
+  // Cloudflare build within the build container's memory limit.
+  sourcemap: false,
   app: {
     head: {
       title: "Ono Toolkit",

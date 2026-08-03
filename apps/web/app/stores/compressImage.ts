@@ -40,8 +40,7 @@ export const useCompressImageStore = defineStore("compressImage", {
     settings: {
       quality: 75,
       format: "original",
-      flattenTransparent: false,
-      flattenColor: "#ffffff"
+      bgColor: "#ffffff"
     },
     addError: null
   }),
@@ -104,12 +103,8 @@ export const useCompressImageStore = defineStore("compressImage", {
       this.settings.format = format;
       this.onSettingsChanged();
     },
-    setFlattenTransparent(value: boolean): void {
-      this.settings.flattenTransparent = value;
-      this.onSettingsChanged();
-    },
-    setFlattenColor(color: string): void {
-      this.settings.flattenColor = color;
+    setBgColor(color: string): void {
+      this.settings.bgColor = color;
       this.onSettingsChanged();
     },
     /** After a completed run, changing a setting invalidates results so the user re-runs. */
@@ -161,8 +156,7 @@ export const useCompressImageStore = defineStore("compressImage", {
       this.settings = {
         quality: 75,
         format: "original",
-        flattenTransparent: false,
-        flattenColor: "#ffffff"
+        bgColor: "#ffffff"
       };
     }
   }
