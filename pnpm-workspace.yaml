@@ -8,3 +8,6 @@ allowBuilds:
   unrs-resolver: true
   vue-demi: true
   core-js: true
+  # onnxruntime-web transitive dep; its build script is not needed for the
+  # browser (WASM/WebGPU) runtime, so its postinstall stays disabled.
+  protobufjs: false

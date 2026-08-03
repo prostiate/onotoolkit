@@ -1,8 +1,8 @@
 export type ToolStatus = "available" | "coming-soon";
 
-export type ToolEngine = "ghostscript" | "pdf-lib" | "mixed" | "browser";
+export type ToolEngine = "ghostscript" | "pdf-lib" | "mixed" | "browser" | "onnx";
 
-export type ToolGroupId = "pdf" | "developer" | "text";
+export type ToolGroupId = "pdf" | "developer" | "text" | "image";
 
 export interface ToolGroup {
   id: ToolGroupId;

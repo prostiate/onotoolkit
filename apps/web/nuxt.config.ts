@@ -1,3 +1,29 @@
+/** Minimal shape of the Rollup `generateBundle` plugin hook we rely on. */
+interface BundleDropPlugin {
+  name: string;
+  generateBundle(options: unknown, bundle: Record<string, unknown>): void;
+}
+
+/**
+ * onnxruntime-web references its `.wasm` binaries via `new URL(..., import.meta.url)`,
+ * so Vite copies them into `.output/public` - and the WebGPU build's wasm is
+ * 25.6MB, over Cloudflare's 25MiB per-asset limit (deploy would fail). We load
+ * the runtime from a versioned CDN (see `ort.env.wasm.wasmPaths` in useInpaint),
+ * so these local copies are unused: drop them from the emitted bundle.
+ */
+function dropOnnxWasm(): BundleDropPlugin {
+  return {
+    name: "ono-drop-onnx-wasm",
+    generateBundle(_options, bundle) {
+      for (const fileName of Object.keys(bundle)) {
+        if (fileName.includes("ort-wasm") && fileName.endsWith(".wasm")) {
+          Reflect.deleteProperty(bundle, fileName);
+        }
+      }
+    }
+  };
+}
+
 export default defineNuxtConfig({
   compatibilityDate: "2026-07-28",
   ssr: true,
@@ -59,6 +85,13 @@ export default defineNuxtConfig({
   vite: {
     worker: {
       format: "es"
-    }
+    },
+    // Heavy, browser-only ML libs are dynamically imported on the client only.
+    // Keep them out of Vite's dev dep pre-bundle; at build time they become lazy
+    // client chunks (and unused lazy server chunks, like the other browser libs).
+    optimizeDeps: {
+      exclude: ["onnxruntime-web", "@imgly/background-removal"]
+    },
+    plugins: [dropOnnxWasm()]
   }
 });

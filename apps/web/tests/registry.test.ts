@@ -50,6 +50,8 @@ describe("tool registry", () => {
     expect(slugs).toContain("word-to-pdf");
     expect(slugs).toContain("pdf-to-markdown");
     expect(slugs).toContain("pdf-to-word");
+    expect(slugs).toContain("background-remover");
+    expect(slugs).toContain("watermark-remover");
   });
 
   it("finds a tool by slug", () => {
@@ -60,6 +62,8 @@ describe("tool registry", () => {
     expect(getToolBySlug("merge-pdf")?.route).toBe("/tools/merge");
     expect(getToolBySlug("split-pdf")?.route).toBe("/tools/split");
     expect(getToolBySlug("rotate-pdf")?.route).toBe("/tools/rotate");
+    expect(getToolBySlug("background-remover")?.route).toBe("/tools/background-remover");
+    expect(getToolBySlug("watermark-remover")?.route).toBe("/tools/watermark-remover");
     expect(getToolBySlug("missing")).toBeUndefined();
   });
 

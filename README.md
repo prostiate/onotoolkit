@@ -49,6 +49,13 @@ and are never sent to a server.
   [json-2-csv](https://github.com/mrodrig/json-2-csv),
   [fast-xml-parser](https://github.com/NaturalIntelligence/fast-xml-parser)),
   with upload, copy on both panes, and download.
+- ✅ **Background Remover** - erase an image background or swap in a solid colour,
+  powered by [@imgly/background-removal](https://github.com/imgly/background-removal-js)
+  running its ONNX model entirely in the browser; exports a lossless PNG.
+- ✅ **Watermark Remover** - brush over a watermark and inpaint it away with
+  [MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN) via
+  [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) (WebGPU → WASM).
+  Only the painted pixels are regenerated; every other pixel stays byte-identical.
 
 **Coming soon**
 
@@ -65,6 +72,7 @@ privacy notice with a first-visit consent popup.
 - **[Pinia](https://pinia.vuejs.org/)** for state, **[Zod](https://zod.dev/)** for validation
 - **[motion-v](https://motion.dev/docs/vue)** for animation
 - **[jose](https://github.com/panva/jose)** (JWT), **[Ghostscript-WASM](https://github.com/jsscheller/ghostscript-wasm)** + **[pdf-lib](https://pdf-lib.js.org/)** + **[pdf.js](https://mozilla.github.io/pdf.js/)** (PDF), **[CodeMirror 6](https://codemirror.net/)** (JSON editor)
+- **[@imgly/background-removal](https://github.com/imgly/background-removal-js)** + **[onnxruntime-web](https://onnxruntime.ai/docs/tutorials/web/)** with **[MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN)** (in-browser image AI)
 - Heavy work runs in **Web Workers**; WASM is loaded lazily, client-side only.
 - **TypeScript** throughout (no `any`), **ESLint** + **Prettier**, **Vitest** + **Playwright**.
 
@@ -140,9 +148,27 @@ short: open an issue to discuss, branch from `main`, keep changes focused, run
 ## License
 
 Licensed under **[AGPL-3.0](LICENSE)**. This is required because Ono Toolkit
-bundles and serves **Ghostscript** (AGPL-3.0) for PDF compression, so the whole
-distributed app must remain open-source under AGPL. If you fork or self-host a
-modified version, you must also make your source available to your users.
+bundles and serves **Ghostscript** (AGPL-3.0) for PDF compression - and
+**[@imgly/background-removal](https://github.com/imgly/background-removal-js)**
+(AGPL-3.0) for background removal - so the whole distributed app must remain
+open-source under AGPL. If you fork or self-host a modified version, you must
+also make your source available to your users.
+
+## Acknowledgements
+
+A huge thank-you to the open-source projects that make the in-browser image
+tools possible - all AI runs on-device, nothing is uploaded:
+
+- **[@imgly/background-removal](https://github.com/imgly/background-removal-js)**
+  by [IMG.LY](https://img.ly/) - browser background removal (AGPL-3.0).
+- **[MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN)** by Picsart AI
+  Research (ICCV 2023) - the inpainting model used for watermark removal (MIT),
+  with the ONNX weights hosted on
+  [Hugging Face](https://huggingface.co/andraniksargsyan/migan).
+- **[ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/)** by Microsoft
+  - in-browser model inference (MIT).
+- **[lxfater/inpaint-web](https://github.com/lxfater/inpaint-web)** - reference
+  for the MI-GAN browser I/O contract.
 
 ## Author
 

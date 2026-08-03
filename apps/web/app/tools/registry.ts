@@ -15,6 +15,11 @@ export const toolGroups: readonly ToolGroup[] = [
     id: "text",
     title: "Text & Markdown",
     description: "Write, preview, and transform text."
+  },
+  {
+    id: "image",
+    title: "Image",
+    description: "Edit images in your browser - nothing is uploaded."
   }
 ] as const;
 
@@ -118,6 +123,26 @@ export const tools: readonly ToolDefinition[] = [
     status: "available",
     engine: "browser",
     route: "/tools/pdf-to-word"
+  },
+  {
+    slug: "background-remover",
+    title: "Background Remover",
+    description: "Erase or recolor an image background in your browser - keeps full quality.",
+    icon: "i-lucide-scissors-line-dashed",
+    group: "image",
+    status: "available",
+    engine: "onnx",
+    route: "/tools/background-remover"
+  },
+  {
+    slug: "watermark-remover",
+    title: "Watermark Remover",
+    description: "Brush over a watermark and inpaint it away - only the marked pixels change.",
+    icon: "i-lucide-eraser",
+    group: "image",
+    status: "available",
+    engine: "onnx",
+    route: "/tools/watermark-remover"
   },
   {
     slug: "jwt-debugger",
