@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Motion } from "motion-v";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import type { CompressItem } from "~/stores/compressImage";
 import type { CompressSettings } from "~/utils/image";
@@ -74,6 +75,12 @@ const downloadItems = computed<DropdownMenuItem[]>(() => [
 
 const totalSaved = computed(() => reductionPercent(store.totalOriginalSize, store.totalResultSize));
 
+// Respect the user's motion preference for the looping preview hint.
+const reduceMotion = ref(false);
+onMounted(() => {
+  reduceMotion.value = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+});
+
 onBeforeUnmount(() => store.reset());
 </script>
 
@@ -126,6 +133,28 @@ onBeforeUnmount(() => store.reset());
           @update:format="(v: CompressSettings['format']) => store.setFormat(v)"
           @update:bg-color="store.setBgColor"
         />
+
+        <Motion
+          v-if="store.doneCount > 0"
+          :initial="{ opacity: 0, y: 6 }"
+          :animate="{ opacity: 1, y: 0 }"
+          :transition="{ type: 'spring', stiffness: 260, damping: 22 }"
+        >
+          <p
+            class="text-muted bg-primary/5 border-primary/15 flex items-center justify-center gap-1.5 rounded-lg border border-dashed px-3 py-2 text-xs"
+          >
+            <Motion
+              class="inline-flex"
+              :animate="reduceMotion ? {} : { scale: [1, 1.25, 1] }"
+              :transition="
+                reduceMotion ? {} : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }
+              "
+            >
+              <UIcon name="i-lucide-eye" class="text-primary size-4" />
+            </Motion>
+            <span>Click any image to compare <strong>before &amp; after</strong>.</span>
+          </p>
+        </Motion>
 
         <CompressFileList
           :items="store.items"
