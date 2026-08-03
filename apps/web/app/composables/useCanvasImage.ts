@@ -59,5 +59,18 @@ export function useCanvasImage() {
     return blob;
   }
 
-  return { loadBitmap, bitmapToRgba, blobToRgba, rgbaToBlob, createCanvas, get2dContext };
+  /** Builds a DOM `ImageData` from an {@link RgbaImage} (ArrayBuffer-backed copy). */
+  function toImageData(image: RgbaImage): ImageData {
+    return new ImageData(new Uint8ClampedArray(image.data), image.width, image.height);
+  }
+
+  return {
+    loadBitmap,
+    bitmapToRgba,
+    blobToRgba,
+    rgbaToBlob,
+    toImageData,
+    createCanvas,
+    get2dContext
+  };
 }

@@ -157,3 +157,73 @@ export function hasPaintedPixels(overlay: RgbaImage, alphaThreshold = 10): boole
   }
   return false;
 }
+
+/** True when any pixel is not fully opaque (i.e. the image has transparency). */
+export function imageHasAlpha(image: RgbaImage): boolean {
+  const { data } = image;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i]! < 255) return true;
+  }
+  return false;
+}
+
+/** Image codecs the compressor can read and/or write. */
+export type ImageFormat = "jpeg" | "png" | "webp";
+
+/** Classifies an input file by MIME type, falling back to its extension. */
+export function detectImageFormat(mimeType: string, fileName: string): ImageFormat | "other" {
+  if (mimeType === "image/jpeg" || /\.jpe?g$/i.test(fileName)) return "jpeg";
+  if (mimeType === "image/png" || /\.png$/i.test(fileName)) return "png";
+  if (mimeType === "image/webp" || /\.webp$/i.test(fileName)) return "webp";
+  return "other";
+}
+
+/** MIME type for an output format. */
+export function formatMimeType(format: ImageFormat): string {
+  return format === "jpeg" ? "image/jpeg" : format === "png" ? "image/png" : "image/webp";
+}
+
+/** File extension (no dot) for an output format. */
+export function formatExtension(format: ImageFormat): string {
+  return format === "jpeg" ? "jpg" : format;
+}
+
+/** User-chosen compression settings that drive {@link decideOutput}. */
+export interface CompressSettings {
+  /** 0-100, applies to lossy JPEG/WebP encodes. */
+  quality: number;
+  /** "original" keeps the source codec; "webp" re-encodes everything to WebP. */
+  format: "original" | "webp";
+  /** Keep PNGs as lossless PNG (oxipng). When false, PNGs go to lossy WebP. */
+  pngLossless: boolean;
+  /** Flatten transparent PNGs onto a solid colour and save as JPEG. */
+  flattenTransparent: boolean;
+  /** Background colour (hex) used when flattening. */
+  flattenColor: string;
+}
+
+/** The concrete encode plan for one image. */
+export interface OutputPlan {
+  format: ImageFormat;
+  /** When true, the image must be flattened onto `flattenColor` before encoding. */
+  flatten: boolean;
+}
+
+/**
+ * Decides how a single image should be encoded given its source format, whether
+ * it actually has transparency, and the user's settings. Pure and exhaustive so
+ * it can be unit-tested without any codec.
+ */
+export function decideOutput(
+  input: ImageFormat | "other",
+  hasAlpha: boolean,
+  settings: CompressSettings
+): OutputPlan {
+  if (settings.format === "webp") return { format: "webp", flatten: false };
+  if (input === "jpeg") return { format: "jpeg", flatten: false };
+  // PNG, WebP, or unknown input keeping its "original" (lossless-capable) lane.
+  if (hasAlpha && settings.flattenTransparent) return { format: "jpeg", flatten: true };
+  if (input === "webp") return { format: "webp", flatten: false };
+  if (settings.pngLossless) return { format: "png", flatten: false };
+  return { format: "webp", flatten: false };
+}

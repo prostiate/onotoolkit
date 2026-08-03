@@ -145,6 +145,16 @@ export const tools: readonly ToolDefinition[] = [
     route: "/tools/watermark-remover"
   },
   {
+    slug: "compress-image",
+    title: "Compress Images",
+    description: "Shrink JPG, PNG, or WebP with MozJPEG/oxipng - keep transparency or flatten it.",
+    icon: "i-lucide-image-minus",
+    group: "image",
+    status: "available",
+    engine: "browser",
+    route: "/tools/compress-image"
+  },
+  {
     slug: "jwt-debugger",
     title: "JWT Debugger",
     description: "Decode, verify, and generate JSON Web Tokens (RFC 7519) - all algorithms.",

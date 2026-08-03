@@ -56,6 +56,10 @@ and are never sent to a server.
   [MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN) via
   [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/) (WebGPU → WASM).
   Only the painted pixels are regenerated; every other pixel stays byte-identical.
+- ✅ **Compress Images** - batch-compress JPG, PNG, and WebP with
+  [jSquash](https://github.com/jamsinclair/jSquash) (MozJPEG, oxipng, WebP).
+  Keep PNG transparency (lossless oxipng or lossy WebP), or flatten it to a
+  colour; download individually or as a ZIP.
 
 **Coming soon**
 
@@ -72,7 +76,7 @@ privacy notice with a first-visit consent popup.
 - **[Pinia](https://pinia.vuejs.org/)** for state, **[Zod](https://zod.dev/)** for validation
 - **[motion-v](https://motion.dev/docs/vue)** for animation
 - **[jose](https://github.com/panva/jose)** (JWT), **[Ghostscript-WASM](https://github.com/jsscheller/ghostscript-wasm)** + **[pdf-lib](https://pdf-lib.js.org/)** + **[pdf.js](https://mozilla.github.io/pdf.js/)** (PDF), **[CodeMirror 6](https://codemirror.net/)** (JSON editor)
-- **[@imgly/background-removal](https://github.com/imgly/background-removal-js)** + **[onnxruntime-web](https://onnxruntime.ai/docs/tutorials/web/)** with **[MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN)** (in-browser image AI)
+- **[@imgly/background-removal](https://github.com/imgly/background-removal-js)** + **[onnxruntime-web](https://onnxruntime.ai/docs/tutorials/web/)** with **[MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN)** (in-browser image AI), **[jSquash](https://github.com/jamsinclair/jSquash)** (MozJPEG/oxipng/WebP image compression)
 - Heavy work runs in **Web Workers**; WASM is loaded lazily, client-side only.
 - **TypeScript** throughout (no `any`), **ESLint** + **Prettier**, **Vitest** + **Playwright**.
 
@@ -169,6 +173,9 @@ tools possible - all AI runs on-device, nothing is uploaded:
   - in-browser model inference (MIT).
 - **[lxfater/inpaint-web](https://github.com/lxfater/inpaint-web)** - reference
   for the MI-GAN browser I/O contract.
+- **[jSquash](https://github.com/jamsinclair/jSquash)** by Jamie Sinclair - the
+  Squoosh WebAssembly codecs (MozJPEG, oxipng, WebP) that power image
+  compression, entirely in the browser (MIT).
 
 ## Author
 

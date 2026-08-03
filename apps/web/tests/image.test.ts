@@ -3,10 +3,16 @@ import {
   brushOverlayToMaskUint8,
   chwUint8ToRgba,
   compositeMaskedRegion,
+  decideOutput,
+  detectImageFormat,
   flattenOntoColor,
+  formatExtension,
+  formatMimeType,
   hasPaintedPixels,
   hexToRgb,
+  imageHasAlpha,
   rgbaToChwUint8,
+  type CompressSettings,
   type RgbaImage
 } from "~/utils/image";
 
@@ -118,5 +124,103 @@ describe("compositeMaskedRegion", () => {
 
   it("throws when sizes do not match", () => {
     expect(() => compositeMaskedRegion(original, result, new Uint8Array([0]))).toThrow();
+  });
+});
+
+describe("imageHasAlpha", () => {
+  it("is true when any pixel is not fully opaque", () => {
+    const data = new Uint8ClampedArray([1, 2, 3, 255, 4, 5, 6, 200]);
+    expect(imageHasAlpha({ width: 2, height: 1, data })).toBe(true);
+  });
+  it("is false when every pixel is fully opaque", () => {
+    const data = new Uint8ClampedArray([1, 2, 3, 255, 4, 5, 6, 255]);
+    expect(imageHasAlpha({ width: 2, height: 1, data })).toBe(false);
+  });
+});
+
+describe("detectImageFormat", () => {
+  it("classifies by MIME type", () => {
+    expect(detectImageFormat("image/jpeg", "x")).toBe("jpeg");
+    expect(detectImageFormat("image/png", "x")).toBe("png");
+    expect(detectImageFormat("image/webp", "x")).toBe("webp");
+  });
+  it("falls back to the file extension", () => {
+    expect(detectImageFormat("", "photo.JPG")).toBe("jpeg");
+    expect(detectImageFormat("application/octet-stream", "a.png")).toBe("png");
+    expect(detectImageFormat("", "a.webp")).toBe("webp");
+  });
+  it("returns 'other' for unsupported inputs", () => {
+    expect(detectImageFormat("image/gif", "a.gif")).toBe("other");
+  });
+});
+
+describe("format helpers", () => {
+  it("maps formats to MIME types", () => {
+    expect(formatMimeType("jpeg")).toBe("image/jpeg");
+    expect(formatMimeType("png")).toBe("image/png");
+    expect(formatMimeType("webp")).toBe("image/webp");
+  });
+  it("maps formats to file extensions", () => {
+    expect(formatExtension("jpeg")).toBe("jpg");
+    expect(formatExtension("png")).toBe("png");
+    expect(formatExtension("webp")).toBe("webp");
+  });
+});
+
+describe("decideOutput", () => {
+  const base: CompressSettings = {
+    quality: 75,
+    format: "original",
+    pngLossless: true,
+    flattenTransparent: false,
+    flattenColor: "#ffffff"
+  };
+
+  it("re-encodes everything to WebP when format is 'webp'", () => {
+    expect(decideOutput("jpeg", false, { ...base, format: "webp" })).toEqual({
+      format: "webp",
+      flatten: false
+    });
+    expect(decideOutput("png", true, { ...base, format: "webp" })).toEqual({
+      format: "webp",
+      flatten: false
+    });
+  });
+
+  it("keeps JPEG input as JPEG", () => {
+    expect(decideOutput("jpeg", false, base)).toEqual({ format: "jpeg", flatten: false });
+  });
+
+  it("keeps opaque PNG as lossless PNG", () => {
+    expect(decideOutput("png", false, base)).toEqual({ format: "png", flatten: false });
+  });
+
+  it("keeps transparent PNG as lossless PNG by default", () => {
+    expect(decideOutput("png", true, base)).toEqual({ format: "png", flatten: false });
+  });
+
+  it("flattens a transparent PNG to JPEG when requested", () => {
+    expect(decideOutput("png", true, { ...base, flattenTransparent: true })).toEqual({
+      format: "jpeg",
+      flatten: true
+    });
+  });
+
+  it("does not flatten an opaque PNG even if flatten is on", () => {
+    expect(decideOutput("png", false, { ...base, flattenTransparent: true })).toEqual({
+      format: "png",
+      flatten: false
+    });
+  });
+
+  it("sends lossy PNGs to WebP when PNG lossless is off", () => {
+    expect(decideOutput("png", true, { ...base, pngLossless: false })).toEqual({
+      format: "webp",
+      flatten: false
+    });
+  });
+
+  it("keeps WebP input as WebP in original mode", () => {
+    expect(decideOutput("webp", true, base)).toEqual({ format: "webp", flatten: false });
   });
 });

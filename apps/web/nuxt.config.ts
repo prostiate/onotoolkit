@@ -90,7 +90,13 @@ export default defineNuxtConfig({
     // Keep them out of Vite's dev dep pre-bundle; at build time they become lazy
     // client chunks (and unused lazy server chunks, like the other browser libs).
     optimizeDeps: {
-      exclude: ["onnxruntime-web", "@imgly/background-removal"]
+      exclude: [
+        "onnxruntime-web",
+        "@imgly/background-removal",
+        "@jsquash/jpeg",
+        "@jsquash/webp",
+        "@jsquash/oxipng"
+      ]
     },
     plugins: [dropOnnxWasm()]
   }
