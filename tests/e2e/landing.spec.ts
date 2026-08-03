@@ -13,12 +13,14 @@ test.describe("landing page", () => {
     await page.getByRole("button", { name: /Switch to (dark|light) mode/ }).waitFor();
   });
 
-  test("shows the hero and lists available + coming-soon tools", async ({ page }) => {
+  test("shows the hero and lists available tools", async ({ page }) => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("toolkit");
     await expect(page.getByRole("heading", { name: "Compress PDF" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "JWT Debugger" })).toBeVisible();
-    await expect(page.getByText("Ready").first()).toBeVisible();
-    await expect(page.getByText("Coming soon").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Background Remover" })).toBeVisible();
+    // Available tools expose an "Open tool" affordance (the "Ready" badge and
+    // any "Coming soon" tools were removed from the registry/UI).
+    await expect(page.getByText("Open tool").first()).toBeVisible();
   });
 
   test("navigates to the compress tool", async ({ page }) => {
