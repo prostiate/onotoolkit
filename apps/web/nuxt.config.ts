@@ -109,7 +109,8 @@ export default defineNuxtConfig({
         "@imgly/background-removal",
         "@jsquash/jpeg",
         "@jsquash/webp",
-        "@jsquash/oxipng"
+        "@jsquash/oxipng",
+        "konva"
       ]
     },
     plugins: [dropOnnxWasm()]

@@ -65,6 +65,16 @@ export const tools: readonly ToolDefinition[] = [
     route: "/tools/rotate"
   },
   {
+    slug: "edit-pdf",
+    title: "Edit PDF",
+    description: "Add rich text, images, shapes, drawings, and signatures onto any PDF page.",
+    icon: "i-lucide-pen-tool",
+    group: "pdf",
+    status: "available",
+    engine: "mixed",
+    route: "/tools/edit-pdf"
+  },
+  {
     slug: "jpg-to-pdf",
     title: "JPG to PDF",
     description: "Combine JPG, PNG, or WebP images into a single PDF.",
