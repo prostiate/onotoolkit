@@ -1,11 +1,14 @@
 import { defineEventHandler, readRawBody, setResponseHeader } from "h3";
 import {
+  assertAllowedOrigin,
   assertConfigured,
   clientIp,
+  enforceDailyQuota,
   rateLimitOrThrow,
   signedHeaders,
   upstreamError,
-  useYtConfig
+  useYtConfig,
+  verifyTurnstileOrThrow
 } from "../../utils/ytBackend";
 
 /**
@@ -16,7 +19,11 @@ import {
 export default defineEventHandler(async (event) => {
   const config = useYtConfig(event);
   assertConfigured(config);
+  assertAllowedOrigin(event, config);
   rateLimitOrThrow(event);
+  // Turnstile (bot check) then the durable daily quota, before doing real work.
+  await verifyTurnstileOrThrow(event, config);
+  await enforceDailyQuota(event, config);
 
   // The signature covers these exact bytes, so forward the same string.
   const body = (await readRawBody(event, "utf8")) ?? "";

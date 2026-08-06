@@ -69,8 +69,9 @@ interface Bucket {
 }
 
 const buckets = new Map<string, Bucket>();
-const RATE_BURST = 8;
-const RATE_REFILL_PER_SEC = 0.5; // ~1 request every 2s sustained
+// Conservative for a free tier: a short burst then ~1 request every 5s sustained.
+const RATE_BURST = 5;
+const RATE_REFILL_PER_SEC = 0.2;
 
 /** Returns false when the IP has exhausted its bucket. `now` is injectable. */
 export function allowIp(ip: string, now: number = Date.now()): boolean {
@@ -87,6 +88,23 @@ export function allowIp(ip: string, now: number = Date.now()): boolean {
   }
   buckets.set(ip, bucket);
   return allowed;
+}
+
+/**
+ * Whether a request Origin is allowed. When `allowed` is empty the check is
+ * disabled (returns true). A missing Origin (same-origin non-CORS navigations
+ * often omit it) is allowed; only a *present, mismatched* Origin is rejected.
+ */
+export function originAllowed(origin: string | undefined | null, allowed: string): boolean {
+  if (!allowed) return true;
+  if (!origin) return true;
+  return origin === allowed;
+}
+
+/** Parses a non-negative integer cap from an env string; 0 means "disabled". */
+export function parseCap(value: string | undefined): number {
+  const n = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 /** Picks a user-facing message from an upstream JSON error body. */

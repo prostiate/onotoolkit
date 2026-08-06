@@ -26,10 +26,15 @@ export function useYoutubeBackend() {
     return (await res.json()) as YoutubeVideoInfo;
   }
 
-  async function fetchDownload(params: DownloadParams): Promise<DownloadResult> {
+  async function fetchDownload(
+    params: DownloadParams,
+    turnstileToken = ""
+  ): Promise<DownloadResult> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (turnstileToken) headers["cf-turnstile-response"] = turnstileToken;
     const res = await fetch(`/api/yt/download`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(params)
     });
     if (!res.ok) throw new Error(await readError(res, "The download failed."));

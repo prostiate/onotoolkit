@@ -8,6 +8,12 @@ useSeoMeta({
 });
 
 const store = useYoutubeDownloaderStore();
+const config = useRuntimeConfig();
+
+// Turnstile is optional: only enforced when a site key is configured.
+const turnstileEnabled = Boolean(config.public.turnstileSiteKey);
+const turnstileToken = ref("");
+const turnstile = ref<{ reset: () => void } | null>(null);
 
 const urlModel = computed<string>({
   get: () => store.url,
@@ -15,6 +21,20 @@ const urlModel = computed<string>({
 });
 
 const urlError = ref<string | null>(null);
+
+// Block download until the bot check is solved (only when Turnstile is on).
+const downloadDisabled = computed(
+  () => store.isBusy || (turnstileEnabled && !turnstileToken.value)
+);
+
+async function onDownload(): Promise<void> {
+  await store.download(turnstileToken.value);
+  // Tokens are single-use; reset the widget for the next download.
+  if (turnstileEnabled) {
+    turnstileToken.value = "";
+    turnstile.value?.reset();
+  }
+}
 
 async function onSubmit(): Promise<void> {
   const parsed = youtubeUrlSchema.safeParse(store.url);
@@ -85,18 +105,23 @@ watch(urlModel, () => {
           @update:quality="store.setQuality($event)"
         />
 
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-dimmed text-xs">
-            <template v-if="store.mode === 'audio'">Best available audio, saved as M4A.</template>
-            <template v-else>Video and audio are merged into a single MP4 on the server.</template>
-          </p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="space-y-2">
+            <p class="text-dimmed text-xs">
+              <template v-if="store.mode === 'audio'">Best available audio, saved as M4A.</template>
+              <template v-else
+                >Video and audio are merged into a single MP4 on the server.</template
+              >
+            </p>
+            <YoutubeTurnstile ref="turnstile" v-model="turnstileToken" />
+          </div>
           <UButton
             icon="i-lucide-download"
             size="lg"
             :loading="store.status === 'downloading'"
-            :disabled="store.isBusy"
+            :disabled="downloadDisabled"
             class="justify-center"
-            @click="store.download()"
+            @click="onDownload()"
           >
             {{ store.status === "downloading" ? "Preparing download..." : "Download" }}
           </UButton>

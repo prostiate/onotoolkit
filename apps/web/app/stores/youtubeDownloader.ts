@@ -78,17 +78,20 @@ export const useYoutubeDownloaderStore = defineStore("youtubeDownloader", {
         this.fail(error instanceof Error ? error.message : "Could not fetch video details.");
       }
     },
-    async download(): Promise<void> {
+    async download(turnstileToken = ""): Promise<void> {
       if (!this.info) return;
       const { fetchDownload, saveBlob } = useYoutubeBackend();
       this.status = "downloading";
       this.error = null;
       try {
-        const { blob, filename } = await fetchDownload({
-          url: this.url.trim(),
-          mode: this.mode,
-          quality: this.mode === "audio" ? 0 : this.quality
-        });
+        const { blob, filename } = await fetchDownload(
+          {
+            url: this.url.trim(),
+            mode: this.mode,
+            quality: this.mode === "audio" ? 0 : this.quality
+          },
+          turnstileToken
+        );
         saveBlob(blob, filename);
         this.status = "ready";
       } catch (error) {

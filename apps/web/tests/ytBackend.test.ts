@@ -4,6 +4,8 @@ import {
   buildCanonical,
   hmacHex,
   isYoutubeUrl,
+  originAllowed,
+  parseCap,
   pickErrorMessage
 } from "../server/utils/ytSigning";
 
@@ -48,18 +50,44 @@ describe("allowIp rate limiter", () => {
   it("permits the burst then blocks, refilling over time", () => {
     const ip = "test-ip-burst";
     const now = 1_000_000;
-    for (let i = 0; i < 8; i++) {
+    // Burst of 5.
+    for (let i = 0; i < 5; i++) {
       expect(allowIp(ip, now)).toBe(true);
     }
     expect(allowIp(ip, now)).toBe(false);
-    // 4 seconds later -> ~2 tokens refilled (0.5/sec).
-    expect(allowIp(ip, now + 4000)).toBe(true);
+    // 5 seconds later -> ~1 token refilled (0.2/sec).
+    expect(allowIp(ip, now + 5000)).toBe(true);
   });
 
   it("tracks IPs independently", () => {
     const now = 2_000_000;
     expect(allowIp("test-ip-a", now)).toBe(true);
     expect(allowIp("test-ip-b", now)).toBe(true);
+  });
+});
+
+describe("originAllowed", () => {
+  it("is disabled when no allowed origin is set", () => {
+    expect(originAllowed("https://evil.com", "")).toBe(true);
+  });
+
+  it("allows a matching origin and a missing origin, rejects a mismatch", () => {
+    const allowed = "https://onotoolkit.irfankurniawan.com";
+    expect(originAllowed(allowed, allowed)).toBe(true);
+    expect(originAllowed(undefined, allowed)).toBe(true);
+    expect(originAllowed("https://evil.com", allowed)).toBe(false);
+  });
+});
+
+describe("parseCap", () => {
+  it("parses positive integers and treats everything else as 0 (disabled)", () => {
+    expect(parseCap("300")).toBe(300);
+    expect(parseCap(" 50 ")).toBe(50);
+    expect(parseCap("")).toBe(0);
+    expect(parseCap(undefined)).toBe(0);
+    expect(parseCap("0")).toBe(0);
+    expect(parseCap("-5")).toBe(0);
+    expect(parseCap("abc")).toBe(0);
   });
 });
 

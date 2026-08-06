@@ -39,7 +39,20 @@ export default defineNuxtConfig({
     //   NUXT_YT_HMAC_SECRET   - HMAC secret (matches backend YT_HMAC_SECRET)
     ytBackendUrl: "",
     ytApiKey: "",
-    ytHmacSecret: ""
+    ytHmacSecret: "",
+    // Abuse controls (all optional; each layer activates only when configured).
+    //   NUXT_TURNSTILE_SECRET   - Cloudflare Turnstile secret (server-side verify)
+    //   NUXT_YT_ALLOWED_ORIGIN  - only accept proxy calls from this Origin
+    //   NUXT_YT_DAILY_GLOBAL_MAX / NUXT_YT_DAILY_IP_MAX - KV-backed daily download caps
+    turnstileSecret: "",
+    ytAllowedOrigin: "",
+    ytDailyGlobalMax: "",
+    ytDailyIpMax: "",
+    public: {
+      // Turnstile site key is meant to be public (rendered in the browser widget).
+      //   NUXT_PUBLIC_TURNSTILE_SITE_KEY
+      turnstileSiteKey: ""
+    }
   },
   // Only build for the Cloudflare Worker in production. Local `nuxt dev` then
   // uses the standard (lighter) dev server instead of Cloudflare emulation.

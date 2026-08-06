@@ -1,5 +1,6 @@
 import { createError, defineEventHandler, getQuery } from "h3";
 import {
+  assertAllowedOrigin,
   assertConfigured,
   clientIp,
   rateLimitOrThrow,
@@ -17,6 +18,7 @@ import { isYoutubeUrl } from "../../utils/ytSigning";
 export default defineEventHandler(async (event) => {
   const config = useYtConfig(event);
   assertConfigured(config);
+  assertAllowedOrigin(event, config);
   rateLimitOrThrow(event);
 
   const url = String(getQuery(event).url ?? "").trim();
