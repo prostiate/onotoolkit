@@ -20,6 +20,11 @@ export const toolGroups: readonly ToolGroup[] = [
     id: "image",
     title: "Image",
     description: "Edit images in your browser - nothing is uploaded."
+  },
+  {
+    id: "media",
+    title: "Media",
+    description: "Download and convert audio and video."
   }
 ] as const;
 
@@ -193,6 +198,16 @@ export const tools: readonly ToolDefinition[] = [
     status: "available",
     engine: "browser",
     route: "/tools/markdown"
+  },
+  {
+    slug: "youtube-downloader",
+    title: "YouTube Downloader",
+    description: "Save a YouTube video as combined video + audio (MP4) or audio only (M4A).",
+    icon: "i-lucide-youtube",
+    group: "media",
+    status: "available",
+    engine: "remote",
+    route: "/tools/youtube-downloader"
   }
 ] as const;
 

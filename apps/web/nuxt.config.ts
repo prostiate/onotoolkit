@@ -30,6 +30,17 @@ export default defineNuxtConfig({
   modules: ["@nuxt/ui", "@pinia/nuxt", "@nuxt/eslint", "motion-v/nuxt"],
   components: [{ path: "~/components", pathPrefix: false }],
   css: ["~/assets/css/main.css"],
+  runtimeConfig: {
+    // Server-only secrets for the YouTube Downloader backend proxy. These are
+    // NOT under `public`, so they never reach the browser. The Nitro routes in
+    // server/api/yt/* read these to sign and forward requests to Render.
+    //   NUXT_YT_BACKEND_URL   - the private Render service URL
+    //   NUXT_YT_API_KEY       - shared secret (matches backend YT_API_KEY)
+    //   NUXT_YT_HMAC_SECRET   - HMAC secret (matches backend YT_HMAC_SECRET)
+    ytBackendUrl: "",
+    ytApiKey: "",
+    ytHmacSecret: ""
+  },
   // Only build for the Cloudflare Worker in production. Local `nuxt dev` then
   // uses the standard (lighter) dev server instead of Cloudflare emulation.
   $production: {
