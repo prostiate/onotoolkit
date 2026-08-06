@@ -49,9 +49,10 @@ export default defineNuxtConfig({
     ytDailyGlobalMax: "",
     ytDailyIpMax: "",
     public: {
-      // Turnstile site key is meant to be public (rendered in the browser widget).
-      //   NUXT_PUBLIC_TURNSTILE_SITE_KEY
-      turnstileSiteKey: ""
+      // Turnstile site key is public (rendered in the browser widget). Baked at
+      // build so the widget renders on Cloudflare (public config can't be set
+      // from a runtime var there). Override with NUXT_PUBLIC_TURNSTILE_SITE_KEY.
+      turnstileSiteKey: "0x4AAAAAAEH4bQ32-Y5E-ZJg"
     }
   },
   // Only build for the Cloudflare Worker in production. Local `nuxt dev` then
