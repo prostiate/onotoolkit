@@ -57,6 +57,12 @@ and are never sent to a server.
   [jSquash](https://github.com/jamsinclair/jSquash) (MozJPEG, oxipng, WebP).
   Choose the output format, keep PNG transparency (lossless oxipng or WebP) or
   flatten it to a colour, preview before/after, and download individually or as a ZIP.
+- **Image Converter** - convert between JPG, PNG, WebP, GIF, BMP, ICO, and AVIF
+  (jSquash + [gifenc](https://github.com/mattdesl/gifenc) + native encoders for
+  ICO/BMP). PNG to multi-size ICO favicons included, with before/after preview.
+- **Image Resizer** - resize by percentage, exact pixels (fit/fill/stretch), or
+  a target file size - the tool binary-searches quality and scale to hit the
+  budget, in JPG, PNG, WebP, GIF, BMP, ICO, or AVIF.
 
 ### Developer
 

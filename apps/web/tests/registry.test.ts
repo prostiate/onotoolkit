@@ -53,6 +53,8 @@ describe("tool registry", () => {
     expect(slugs).toContain("background-remover");
     expect(slugs).toContain("watermark-remover");
     expect(slugs).toContain("compress-image");
+    expect(slugs).toContain("image-converter");
+    expect(slugs).toContain("image-resizer");
     expect(slugs).toContain("edit-pdf");
   });
 
@@ -67,6 +69,8 @@ describe("tool registry", () => {
     expect(getToolBySlug("background-remover")?.route).toBe("/tools/background-remover");
     expect(getToolBySlug("watermark-remover")?.route).toBe("/tools/watermark-remover");
     expect(getToolBySlug("compress-image")?.route).toBe("/tools/compress-image");
+    expect(getToolBySlug("image-converter")?.route).toBe("/tools/image-converter");
+    expect(getToolBySlug("image-resizer")?.route).toBe("/tools/image-resizer");
     expect(getToolBySlug("edit-pdf")?.route).toBe("/tools/edit-pdf");
     expect(getToolBySlug("missing")).toBeUndefined();
   });

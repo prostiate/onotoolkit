@@ -165,6 +165,28 @@ export const tools: readonly ToolDefinition[] = [
     route: "/tools/compress-image"
   },
   {
+    slug: "image-converter",
+    title: "Image Converter",
+    description:
+      "Convert images between JPG, PNG, WebP, GIF, BMP, ICO, and AVIF - PNG to ICO favicons included.",
+    icon: "i-lucide-repeat-2",
+    group: "image",
+    status: "available",
+    engine: "browser",
+    route: "/tools/image-converter"
+  },
+  {
+    slug: "image-resizer",
+    title: "Image Resizer",
+    description:
+      "Resize by percentage, exact pixels, or a target file size - with full quality control.",
+    icon: "i-lucide-scaling",
+    group: "image",
+    status: "available",
+    engine: "browser",
+    route: "/tools/image-resizer"
+  },
+  {
     slug: "jwt-debugger",
     title: "JWT Debugger",
     description: "Decode, verify, and generate JSON Web Tokens (RFC 7519) - all algorithms.",
