@@ -19,17 +19,5 @@
   ],
   "observability": {
     "enabled": true
-  },
-  // Non-secret runtime config for the YouTube Downloader proxy. Nuxt maps these
-  // NUXT_-prefixed vars onto runtimeConfig at runtime (read via
-  // useRuntimeConfig(event) in server/utils/ytBackend.ts). Secrets
-  // (NUXT_YT_BACKEND_URL / API_KEY / HMAC_SECRET, NUXT_TURNSTILE_SECRET) are set
-  // separately via `wrangler secret put` so they never live in git.
-  "vars": {
-    "NUXT_YT_ALLOWED_ORIGIN": "https://onotoolkit.irfankurniawan.com",
-    "NUXT_YT_DAILY_GLOBAL_MAX": "300",
-    "NUXT_YT_DAILY_IP_MAX": "20"
-  },
-  // KV namespace backing the per-IP + global daily download quota.
-  "kv_namespaces": [{ "binding": "YT_KV", "id": "2daff2b27c5747cebc5b05a95d5b94ed" }]
+  }
 }

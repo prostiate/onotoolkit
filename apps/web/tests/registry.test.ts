@@ -54,7 +54,6 @@ describe("tool registry", () => {
     expect(slugs).toContain("watermark-remover");
     expect(slugs).toContain("compress-image");
     expect(slugs).toContain("edit-pdf");
-    expect(slugs).toContain("youtube-downloader");
   });
 
   it("finds a tool by slug", () => {
@@ -69,7 +68,6 @@ describe("tool registry", () => {
     expect(getToolBySlug("watermark-remover")?.route).toBe("/tools/watermark-remover");
     expect(getToolBySlug("compress-image")?.route).toBe("/tools/compress-image");
     expect(getToolBySlug("edit-pdf")?.route).toBe("/tools/edit-pdf");
-    expect(getToolBySlug("youtube-downloader")?.route).toBe("/tools/youtube-downloader");
     expect(getToolBySlug("missing")).toBeUndefined();
   });
 

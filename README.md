@@ -79,30 +79,15 @@ and are never sent to a server.
 - **Markdown Studio** - edit Markdown in a live editor and export to PDF or Word
   (DOCX).
 
-### Media
-
-- **YouTube Downloader** - save a video as combined video + audio (MP4) or audio
-  only (M4A). See the note below on how this one works.
-
 Plus a considered experience: light/dark themes, mobile-first responsive
 layouts, motion.dev micro-interactions (an animated orbiting-planet logo), and a
 privacy notice with a first-visit consent popup.
 
-### A note on the YouTube Downloader (the one tool that isn't in-browser)
+### Why the YouTube Downloader was removed
 
-Every other tool here runs **entirely in your browser** - the blanket
-"nothing leaves your device" claim above holds for all of them. YouTube
-downloading is the sole exception: browsers can't fetch YouTube's signed video
-streams, so this one tool talks to a small backend that runs
-[`yt-dlp`](https://github.com/yt-dlp/yt-dlp).
-
-That backend lives in a **separate private repository** - not to hide anything
-from you, but for the maintainer's peace of mind (it's a personal, free-tier
-service). To be clear about what it does and doesn't do: it is **still
-no-tracking and no-accounts**. Only the YouTube link you paste is sent, solely to
-fetch the video; **nothing is stored, logged, or retained**, and no personal data
-is processed. The link is proxied through this site to the backend (which signs
-and authenticates the call) and the video is streamed straight back to you.
+The YouTube Downloader tool was removed because its backend couldn't be kept
+working reliably, and the maintainer doesn't have the time to fix it right now.
+It may return in the future if spare time allows.
 
 ## Tech Stack
 
