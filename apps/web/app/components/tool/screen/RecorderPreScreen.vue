@@ -1,7 +1,20 @@
 <script setup lang="ts">
+import { computed } from "vue";
+
 const store = useScreenRecorderStore();
 
 const emit = defineEmits<{ start: [] }>();
+
+const isCameraMode = computed(() => store.settings.recordMode === "camera");
+const showsWebcamToggle = computed(() => store.settings.recordMode === "screen");
+const showsOverlaySettings = computed(
+  () => store.settings.recordMode !== "camera" && store.settings.webcamOn
+);
+
+const startLabel = computed(() => {
+  if (isCameraMode.value) return "Start camera recording";
+  return "Start recording";
+});
 
 function onWebcamToggle(): void {
   void store.setWebcamOn(!store.settings.webcamOn);
@@ -11,11 +24,15 @@ function onWebcamToggle(): void {
 <template>
   <div class="space-y-5">
     <AppCard>
+      <RecorderModeSelect />
+    </AppCard>
+
+    <AppCard>
       <div class="space-y-5">
         <RecorderCameraPreview />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
+          <div v-if="showsWebcamToggle" class="flex items-center gap-2">
             <UButton
               :icon="store.settings.webcamOn ? 'i-lucide-video' : 'i-lucide-video-off'"
               :color="store.settings.webcamOn ? 'primary' : 'neutral'"
@@ -24,15 +41,23 @@ function onWebcamToggle(): void {
               :aria-pressed="store.settings.webcamOn"
               @click="onWebcamToggle"
             >
-              {{ store.settings.webcamOn ? "Webcam on" : "Webcam off" }}
+              {{ store.settings.webcamOn ? "Webcam on" : "Add webcam" }}
             </UButton>
             <span class="text-dimmed text-xs">
-              {{ store.settings.webcamOn ? "Your camera is live" : "Start without the camera" }}
+              {{ store.settings.webcamOn ? "Camera bubble on your screen" : "Optional" }}
             </span>
           </div>
+          <p v-else class="text-dimmed flex items-center gap-1.5 text-xs">
+            <UIcon name="i-lucide-info" class="text-primary size-3.5" />
+            {{
+              isCameraMode
+                ? "You can add your screen once recording starts."
+                : "You can move the camera bubble while recording."
+            }}
+          </p>
 
           <RecorderDeviceSelect
-            v-if="store.settings.webcamOn"
+            v-if="store.cameraStream"
             id="recorder-camera-device"
             label="Camera"
             :devices="store.devices.cameras"
@@ -49,7 +74,7 @@ function onWebcamToggle(): void {
       </div>
     </AppCard>
 
-    <AppCard>
+    <AppCard v-if="showsOverlaySettings">
       <RecorderOverlaySettings />
     </AppCard>
 
@@ -63,7 +88,7 @@ function onWebcamToggle(): void {
     </p>
 
     <UButton color="primary" icon="i-lucide-circle-dot" size="lg" block @click="emit('start')">
-      Start recording
+      {{ startLabel }}
     </UButton>
   </div>
 </template>

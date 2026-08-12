@@ -1,63 +1,113 @@
 <script setup lang="ts">
-import type { OverlaySize, WebcamCorner } from "~/types/screenRecorder";
+import type { NormalizedRect, WebcamCorner, WebcamShape } from "~/types/screenRecorder";
 
 const store = useScreenRecorderStore();
 
-const corners: { value: WebcamCorner; label: string; icon: string }[] = [
-  { value: "top-left", label: "Top left", icon: "i-lucide-arrow-up-left" },
-  { value: "top-right", label: "Top right", icon: "i-lucide-arrow-up-right" },
-  { value: "bottom-left", label: "Bottom left", icon: "i-lucide-arrow-down-left" },
-  { value: "bottom-right", label: "Bottom right", icon: "i-lucide-arrow-down-right" }
+const shapes: { value: WebcamShape; label: string; icon: string }[] = [
+  { value: "circle", label: "Circle", icon: "i-lucide-circle" },
+  { value: "rounded", label: "Rounded", icon: "i-lucide-square-rounded-corner" },
+  { value: "square", label: "Square", icon: "i-lucide-square" }
 ];
 
-const sizes: { value: OverlaySize; label: string }[] = [
-  { value: "small", label: "Small" },
-  { value: "medium", label: "Medium" },
-  { value: "large", label: "Large" }
+const corners: { value: WebcamCorner; icon: string }[] = [
+  { value: "top-left", icon: "i-lucide-arrow-up-left" },
+  { value: "top-right", icon: "i-lucide-arrow-up-right" },
+  { value: "bottom-left", icon: "i-lucide-arrow-down-left" },
+  { value: "bottom-right", icon: "i-lucide-arrow-down-right" }
 ];
 
-function onSizeChange(value: unknown): void {
-  if (value === "small" || value === "medium" || value === "large") {
-    store.setOverlaySize(value);
-  }
+const sizes: { value: "small" | "medium" | "large"; label: string; frac: number }[] = [
+  { value: "small", label: "S", frac: 0.18 },
+  { value: "medium", label: "M", frac: 0.26 },
+  { value: "large", label: "L", frac: 0.34 }
+];
+
+const MARGIN = 0.03;
+
+function positionFor(corner: WebcamCorner, width: number, height: number): NormalizedRect {
+  const x = corner.endsWith("left") ? MARGIN : 1 - width - MARGIN;
+  const y = corner.startsWith("top") ? MARGIN : 1 - height - MARGIN;
+  return { x, y, width, height };
+}
+
+function applyCorner(corner: WebcamCorner): void {
+  store.setOverlayCorner(corner);
+  const { width, height } = store.settings.overlayRect;
+  store.setOverlayRect(positionFor(corner, width, height));
+}
+
+function applySize(frac: number): void {
+  const width = frac;
+  // Keep it visually squarer on a 16:9 canvas.
+  const height = frac * 1.15;
+  store.setOverlayRect(positionFor(store.settings.overlayCorner, width, height));
+}
+
+function isActiveSize(frac: number): boolean {
+  return Math.abs(store.settings.overlayRect.width - frac) < 0.02;
 }
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div class="space-y-4">
     <div>
-      <p class="text-highlighted text-sm font-semibold">Webcam overlay</p>
-      <p class="text-dimmed text-xs">Position the picture-in-picture camera on the recording.</p>
+      <p class="text-highlighted text-sm font-semibold">Webcam bubble</p>
+      <p class="text-dimmed text-xs">
+        Pick a starting shape and spot — then drag or resize it right on the preview while you
+        record.
+      </p>
     </div>
 
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div class="grid grid-cols-2 gap-2" role="group" aria-label="Overlay corner">
-        <UButton
-          v-for="corner in corners"
-          :key="corner.value"
-          :icon="corner.icon"
-          :label="corner.label"
-          size="sm"
-          :color="store.settings.overlayCorner === corner.value ? 'primary' : 'neutral'"
-          :variant="store.settings.overlayCorner === corner.value ? 'solid' : 'soft'"
-          :aria-pressed="store.settings.overlayCorner === corner.value"
-          @click="store.setOverlayCorner(corner.value)"
-        />
+    <div class="flex flex-wrap items-end gap-5">
+      <div>
+        <span class="text-muted mb-1.5 block text-xs font-medium">Shape</span>
+        <div class="flex gap-2" role="group" aria-label="Webcam shape">
+          <UButton
+            v-for="shape in shapes"
+            :key="shape.value"
+            :icon="shape.icon"
+            :label="shape.label"
+            size="sm"
+            :color="store.settings.overlayShape === shape.value ? 'primary' : 'neutral'"
+            :variant="store.settings.overlayShape === shape.value ? 'solid' : 'soft'"
+            :aria-pressed="store.settings.overlayShape === shape.value"
+            @click="store.setOverlayShape(shape.value)"
+          />
+        </div>
       </div>
 
-      <div class="w-32">
-        <label class="text-muted mb-1.5 block text-xs font-medium" for="recorder-overlay-size">
-          Size
-        </label>
-        <USelect
-          id="recorder-overlay-size"
-          :model-value="store.settings.overlaySize"
-          :items="sizes"
-          value-key="value"
-          size="sm"
-          :aria-label="`Webcam overlay size ${store.settings.overlaySize}`"
-          @update:model-value="onSizeChange"
-        />
+      <div>
+        <span class="text-muted mb-1.5 block text-xs font-medium">Size</span>
+        <div class="flex gap-2" role="group" aria-label="Webcam size">
+          <UButton
+            v-for="size in sizes"
+            :key="size.value"
+            :label="size.label"
+            size="sm"
+            square
+            :color="isActiveSize(size.frac) ? 'primary' : 'neutral'"
+            :variant="isActiveSize(size.frac) ? 'solid' : 'soft'"
+            @click="applySize(size.frac)"
+          />
+        </div>
+      </div>
+
+      <div>
+        <span class="text-muted mb-1.5 block text-xs font-medium">Corner</span>
+        <div class="grid grid-cols-2 gap-1.5" role="group" aria-label="Webcam corner">
+          <UButton
+            v-for="corner in corners"
+            :key="corner.value"
+            :icon="corner.icon"
+            :aria-label="corner.value"
+            size="sm"
+            square
+            :color="store.settings.overlayCorner === corner.value ? 'primary' : 'neutral'"
+            :variant="store.settings.overlayCorner === corner.value ? 'solid' : 'soft'"
+            :aria-pressed="store.settings.overlayCorner === corner.value"
+            @click="applyCorner(corner.value)"
+          />
+        </div>
       </div>
     </div>
   </div>

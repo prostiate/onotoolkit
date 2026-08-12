@@ -17,13 +17,17 @@ onBeforeUnmount(() => {
 <template>
   <div class="space-y-4">
     <AppCard class="p-2">
-      <!-- The live composite: the recorder draws the screen + webcam overlay
-           onto this canvas while MediaRecorder encodes it. -->
-      <canvas
-        ref="canvas"
-        class="mx-auto block max-h-[62vh] w-full rounded-xl bg-black"
-        aria-label="Live preview of the recording"
-      />
+      <!-- The stage wraps the canvas so the annotation layer and draggable
+           webcam frame line up 1:1 with the composited output. -->
+      <div class="relative mx-auto w-full">
+        <canvas
+          ref="canvas"
+          class="mx-auto block max-h-[62vh] w-full rounded-xl bg-black"
+          aria-label="Live preview of the recording"
+        />
+        <RecorderStage />
+        <RecorderAnnotationToolbar />
+      </div>
     </AppCard>
 
     <div class="flex flex-wrap items-center justify-center gap-2">
@@ -67,6 +71,18 @@ onBeforeUnmount(() => {
         {{ store.overlayVisible ? "Hide webcam" : "Show webcam" }}
       </UButton>
 
+      <UButton
+        v-if="!store.displayActive"
+        color="neutral"
+        variant="outline"
+        icon="i-lucide-monitor-up"
+        aria-label="Add screen"
+        data-testid="add-screen"
+        @click="() => store.addScreenMidSession()"
+      >
+        Add screen
+      </UButton>
+
       <UButton color="error" variant="solid" icon="i-lucide-square" @click="store.stopRecording()">
         Stop
       </UButton>
@@ -76,8 +92,8 @@ onBeforeUnmount(() => {
       class="text-dimmed mx-auto flex max-w-md items-center justify-center gap-1.5 text-center text-xs"
     >
       <UIcon name="i-lucide-info" class="text-primary size-3.5" />
-      Keep this tab open while recording. Use your browser's "Stop sharing" to finish early, or
-      press Stop above.
+      Keep this tab open while recording. Drag the camera bubble or draw with the pen; use "Stop
+      sharing" or the Stop button to finish.
     </p>
   </div>
 </template>

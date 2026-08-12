@@ -49,6 +49,10 @@ onBeforeUnmount(() => store.reset());
       />
       <RecorderSession v-show="store.hasSession" />
       <RecorderResult v-show="store.status === 'done'" @restart="onRestart" />
+
+      <ClientOnly>
+        <RecorderLibrary v-if="!store.hasSession" />
+      </ClientOnly>
     </div>
   </ToolLayout>
 </template>

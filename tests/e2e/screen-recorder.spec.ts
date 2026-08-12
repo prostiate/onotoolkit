@@ -52,9 +52,11 @@ test.describe("screen recorder", () => {
     await page.addInitScript(fakeDisplayMedia);
   });
 
-  test("shows the Zoom-style pre-screen with remembered defaults", async ({ page }) => {
+  test("shows the pre-screen with mode selection and remembered defaults", async ({ page }) => {
     await page.goto("/tools/screen-recorder");
     await expect(page.getByRole("heading", { name: "Screen Recorder" })).toBeVisible();
+    await expect(page.getByText("What do you want to record?")).toBeVisible();
+    await expect(page.getByTestId("record-mode-screen")).toHaveAttribute("aria-checked", "true");
     await expect(page.getByText("Webcam is off")).toBeVisible();
     await expect(page.getByRole("button", { name: "Turn webcam on" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Start recording" })).toBeVisible();
@@ -62,6 +64,27 @@ test.describe("screen recorder", () => {
     // Microphone is on by default; system audio is off by default.
     await expect(page.getByRole("button", { name: "Turn microphone off" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Turn system audio on" })).toBeVisible();
+  });
+
+  test("camera-only mode records without a screen and saves to the library", async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto("/tools/screen-recorder");
+    await page.getByTestId("record-mode-camera").click();
+    await expect(page.getByTestId("camera-preview")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start camera recording" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Start camera recording" }).click();
+    await expect(page.getByLabel("Recording duration")).toBeVisible({ timeout: 20_000 });
+    // Camera-only sessions can still add a screen mid-recording.
+    await expect(page.getByTestId("add-screen")).toBeVisible();
+    await page.waitForTimeout(1_200);
+    await page.getByRole("button", { name: "Stop", exact: true }).click();
+    await expect(page.getByText("Recording ready")).toBeVisible({ timeout: 30_000 });
+
+    // The finished clip lands in the persistent local library.
+    await expect(page.getByTestId("library-item").first()).toBeVisible();
+    await page.getByRole("button", { name: "Record another" }).click();
+    await expect(page.getByTestId("library-item").first()).toBeVisible();
   });
 
   test("webcam toggle shows a live preview and the choice is remembered", async ({ page }) => {
@@ -81,12 +104,11 @@ test.describe("screen recorder", () => {
     test.setTimeout(90_000);
     await page.goto("/tools/screen-recorder");
 
-    // Pre-screen: webcam on, overlay top-left + small, 720p, system audio on.
+    // Pre-screen: webcam on, circle bubble tucked top-left, system audio on.
     await page.getByRole("button", { name: "Turn webcam on" }).click();
     await page.getByRole("button", { name: "Turn system audio on" }).click();
-    await page.getByRole("button", { name: "Top left" }).click();
-    await page.getByLabel("Webcam overlay size medium").click();
-    await page.getByRole("option", { name: "Small" }).click();
+    await page.getByRole("button", { name: "Circle" }).click();
+    await page.getByRole("button", { name: "top-left" }).click();
 
     await page.getByRole("button", { name: "Start recording" }).click();
 
@@ -94,6 +116,11 @@ test.describe("screen recorder", () => {
     await expect(page.getByLabel("Recording duration")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByLabel("Live preview of the recording")).toBeVisible();
     await expect(page.getByRole("button", { name: "Pause recording" })).toBeEnabled();
+
+    // The draggable webcam frame and annotation dock are available while recording.
+    await expect(page.getByTestId("webcam-frame")).toBeVisible();
+    await page.getByTestId("annotation-toggle").click();
+    await expect(page.getByTestId("annotation-surface")).toBeVisible();
 
     // Pause and resume.
     await page.getByRole("button", { name: "Pause recording" }).click();

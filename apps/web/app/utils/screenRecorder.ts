@@ -1,4 +1,10 @@
-import type { OverlaySize, WebcamCorner } from "~/types/screenRecorder";
+import type {
+  AnnotationStroke,
+  NormalizedRect,
+  OverlaySize,
+  WebcamCorner,
+  WebcamShape
+} from "~/types/screenRecorder";
 
 /** Preferred MediaRecorder MIME types, best quality first (probed per browser). */
 export const RECORDER_MIME_CANDIDATES: readonly { mimeType: string; extension: "mp4" | "webm" }[] =
@@ -76,6 +82,149 @@ export function computeOverlayRect(
   return { x, y, width, height };
 }
 
+/** Converts a normalized (0..1) rect into pixel coordinates on the canvas. */
+export function denormalizeRect(
+  rect: NormalizedRect,
+  canvasWidth: number,
+  canvasHeight: number
+): OverlayRect {
+  return {
+    x: Math.round(rect.x * canvasWidth),
+    y: Math.round(rect.y * canvasHeight),
+    width: Math.round(rect.width * canvasWidth),
+    height: Math.round(rect.height * canvasHeight)
+  };
+}
+
+/** Clamps a normalized rect so it always stays fully inside the canvas. */
+export function clampNormalizedRect(rect: NormalizedRect): NormalizedRect {
+  const width = Math.min(Math.max(rect.width, 0.05), 1);
+  const height = Math.min(Math.max(rect.height, 0.05), 1);
+  const x = Math.min(Math.max(rect.x, 0), 1 - width);
+  const y = Math.min(Math.max(rect.y, 0), 1 - height);
+  return { x, y, width, height };
+}
+
+/**
+ * Draws a video into a destination rect using object-fit: cover semantics,
+ * cropping the source so the rect is filled without distortion.
+ */
+export function drawVideoCover(
+  ctx: CanvasRenderingContext2D,
+  video: HTMLVideoElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): void {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (vw === 0 || vh === 0 || width === 0 || height === 0) return;
+  const destAspect = width / height;
+  const srcAspect = vw / vh;
+  let sx = 0;
+  let sy = 0;
+  let sw = vw;
+  let sh = vh;
+  if (srcAspect > destAspect) {
+    sw = Math.round(vh * destAspect);
+    sx = Math.round((vw - sw) / 2);
+  } else {
+    sh = Math.round(vw / destAspect);
+    sy = Math.round((vh - sh) / 2);
+  }
+  ctx.drawImage(video, sx, sy, sw, sh, x, y, width, height);
+}
+
+/** Applies a clip path for the given webcam shape over the rect. Caller saves/restores. */
+export function applyShapeClip(
+  ctx: CanvasRenderingContext2D,
+  shape: WebcamShape,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): void {
+  ctx.beginPath();
+  if (shape === "circle") {
+    ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+  } else if (shape === "rounded" && typeof ctx.roundRect === "function") {
+    const radius = Math.min(width, height) * 0.18;
+    ctx.roundRect(x, y, width, height, radius);
+  } else {
+    ctx.rect(x, y, width, height);
+  }
+  ctx.clip();
+}
+
+/** Draws one annotation stroke onto the canvas, mapping normalized points to pixels. */
+export function drawAnnotation(
+  ctx: CanvasRenderingContext2D,
+  stroke: AnnotationStroke,
+  canvasWidth: number,
+  canvasHeight: number
+): void {
+  if (stroke.points.length === 0) return;
+  const px = (n: number): number => n * canvasWidth;
+  const py = (n: number): number => n * canvasHeight;
+  const lineWidth = Math.max(1, stroke.width * canvasWidth);
+
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = stroke.color;
+  ctx.fillStyle = stroke.color;
+  ctx.lineWidth = lineWidth;
+  ctx.globalAlpha = stroke.tool === "highlighter" ? 0.35 : 1;
+
+  if (stroke.tool === "pen" || stroke.tool === "highlighter") {
+    if (stroke.tool === "highlighter") ctx.lineWidth = lineWidth * 2.5;
+    ctx.beginPath();
+    const [first, ...rest] = stroke.points;
+    if (!first) {
+      ctx.restore();
+      return;
+    }
+    ctx.moveTo(px(first.x), py(first.y));
+    for (const point of rest) ctx.lineTo(px(point.x), py(point.y));
+    ctx.stroke();
+  } else if (stroke.tool === "rect") {
+    const start = stroke.points[0];
+    const end = stroke.points[stroke.points.length - 1];
+    if (start && end) {
+      ctx.strokeRect(px(start.x), py(start.y), px(end.x) - px(start.x), py(end.y) - py(start.y));
+    }
+  } else if (stroke.tool === "arrow") {
+    const start = stroke.points[0];
+    const end = stroke.points[stroke.points.length - 1];
+    if (start && end) {
+      const x1 = px(start.x);
+      const y1 = py(start.y);
+      const x2 = px(end.x);
+      const y2 = py(end.y);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = Math.max(lineWidth * 3, canvasWidth * 0.012);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(
+        x2 - head * Math.cos(angle - Math.PI / 6),
+        y2 - head * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        x2 - head * Math.cos(angle + Math.PI / 6),
+        y2 - head * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 /** Human-friendly label for a media device, with a sensible fallback. */
 export function formatDeviceLabel(device: MediaDeviceInfo, kind: "camera" | "microphone"): string {
   const label = device.label.trim();
@@ -94,11 +243,20 @@ export function formatRecordingDuration(elapsedMs: number): string {
   return `${minutes}:${pad(seconds)}`;
 }
 
-/** Tells whether the browser has the APIs a recording session needs. */
+/** Tells whether the browser has the APIs a screen-capture session needs. */
 export function isScreenRecordingSupported(): boolean {
   return (
     typeof navigator !== "undefined" &&
     Boolean(navigator.mediaDevices?.getDisplayMedia) &&
+    typeof MediaRecorder !== "undefined"
+  );
+}
+
+/** Tells whether camera-only recording is possible (no screen capture required). */
+export function isCameraRecordingSupported(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    Boolean(navigator.mediaDevices?.getUserMedia) &&
     typeof MediaRecorder !== "undefined"
   );
 }

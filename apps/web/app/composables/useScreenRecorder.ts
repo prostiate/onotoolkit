@@ -1,14 +1,23 @@
 import type { RecorderSession, RecorderSessionOptions } from "~/types/screenRecorder";
-import { computeOverlayRect, pickRecorderMimeType, recorderBitrate } from "~/utils/screenRecorder";
+import {
+  applyShapeClip,
+  denormalizeRect,
+  drawAnnotation,
+  drawVideoCover,
+  pickRecorderMimeType,
+  recorderBitrate
+} from "~/utils/screenRecorder";
 
 /**
- * The recording engine: composites the display + webcam onto a canvas,
- * mixes microphone/tab audio through the Web Audio graph, and encodes the
- * result with MediaRecorder. Everything stays on the device.
+ * The recording engine: composites the display, an optional movable webcam
+ * picture-in-picture, and burned-in annotations onto a canvas, mixes
+ * microphone/tab audio through a Web Audio graph, and encodes the result with
+ * MediaRecorder. Sources (screen, camera, audio) can be swapped mid-session
+ * without replacing the recorded tracks. Everything stays on the device.
  */
 export function useScreenRecorder() {
   function createSession(options: RecorderSessionOptions): RecorderSession {
-    const { canvas, displayStream, resolution, frameRate } = options;
+    const { canvas, resolution, frameRate, live } = options;
     const canvasContext = canvas.getContext("2d");
     if (!canvasContext) throw new Error("Could not create the recording canvas.");
     const ctx = canvasContext;
@@ -16,10 +25,12 @@ export function useScreenRecorder() {
     const displayVideo = document.createElement("video");
     displayVideo.muted = true;
     displayVideo.playsInline = true;
-    displayVideo.srcObject = displayStream;
+
+    let displayStream: MediaStream | null = null;
+    let displayTrack: MediaStreamTrack | null = null;
+    let hasDisplay = false;
 
     let cameraVideo: HTMLVideoElement | null = null;
-    let cameraAspect = 16 / 9;
     let overlayEnabled = options.overlay.enabled;
 
     let frameHandle: number | null = null;
@@ -28,15 +39,15 @@ export function useScreenRecorder() {
     let disposed = false;
     let recorder: MediaRecorder | null = null;
     let audioContext: AudioContext | null = null;
+    let audioDestination: MediaStreamAudioDestinationNode | null = null;
+    const audioSourceNodes = new Map<MediaStream, MediaStreamAudioSourceNode>();
     const chunks: Blob[] = [];
     let stopResolve: ((blob: Blob) => void) | null = null;
     let stopReject: ((error: Error) => void) | null = null;
 
-    const displayTrack = displayStream.getVideoTracks()[0] ?? null;
-
-    async function awaitPlayable(video: HTMLVideoElement): Promise<void> {
-      if (video.readyState >= 2) return;
-      await new Promise<void>((resolve) => {
+    function awaitPlayable(video: HTMLVideoElement): Promise<void> {
+      if (video.readyState >= 2) return Promise.resolve();
+      return new Promise<void>((resolve) => {
         const onReady = (): void => {
           video.removeEventListener("loadeddata", onReady);
           resolve();
@@ -55,69 +66,114 @@ export function useScreenRecorder() {
       video.muted = true;
       video.playsInline = true;
       video.srcObject = stream;
+      void video.play().catch(() => undefined);
       void awaitPlayable(video).then(() => {
         if (cameraVideo === video && video.videoWidth > 0 && video.videoHeight > 0) {
-          cameraAspect = video.videoWidth / video.videoHeight;
+          if (!hasDisplay) sizeCanvasFromCamera();
         }
       });
       cameraVideo = video;
     }
 
-    function sizeCanvas(displayHeight: number): { width: number; height: number } {
-      const targetHeight =
-        resolution === "1080p" ? 1080 : resolution === "720p" ? 720 : displayHeight;
-      const scale = targetHeight / displayHeight;
-      return { width: Math.round(displayVideo.videoWidth * scale), height: targetHeight };
+    function targetHeightFor(sourceHeight: number): number {
+      return resolution === "1080p" ? 1080 : resolution === "720p" ? 720 : sourceHeight;
     }
 
-    async function setupCanvasSize(): Promise<void> {
-      await awaitPlayable(displayVideo);
-      const { width, height } = sizeCanvas(displayVideo.videoHeight);
-      canvas.width = width;
-      canvas.height = height;
+    function sizeCanvasFromDisplay(): void {
+      const height = targetHeightFor(displayVideo.videoHeight || 720);
+      const scale = displayVideo.videoHeight ? height / displayVideo.videoHeight : 1;
+      canvas.width = Math.max(2, Math.round((displayVideo.videoWidth || 1280) * scale));
+      canvas.height = Math.max(2, height);
     }
 
-    async function setupAudio(): Promise<MediaStreamTrack | null> {
-      const { micStream, tabStream } = options;
-      const sources = [micStream, tabStream].filter(
-        (stream): stream is MediaStream => stream !== null
-      );
-      if (sources.length === 0) return null;
-      audioContext = new AudioContext();
-      if (audioContext.state === "suspended") await audioContext.resume();
-      const destination = audioContext.createMediaStreamDestination();
-      for (const source of sources) {
-        audioContext.createMediaStreamSource(source).connect(destination);
+    function sizeCanvasFromCamera(): void {
+      if (hasDisplay || !cameraVideo) return;
+      const camH = cameraVideo.videoHeight || 720;
+      const camW = cameraVideo.videoWidth || 1280;
+      const height = targetHeightFor(camH);
+      const scale = camH ? height / camH : 1;
+      canvas.width = Math.max(2, Math.round(camW * scale));
+      canvas.height = Math.max(2, height);
+    }
+
+    async function bindDisplay(stream: MediaStream | null): Promise<void> {
+      if (displayTrack) displayTrack.removeEventListener("ended", onScreenEnded);
+      if (displayStream && displayStream !== stream) {
+        for (const track of displayStream.getVideoTracks()) track.stop();
       }
-      return destination.stream.getAudioTracks()[0] ?? null;
+      displayStream = stream;
+      hasDisplay = stream !== null;
+      if (!stream) {
+        displayVideo.srcObject = null;
+        displayTrack = null;
+        sizeCanvasFromCamera();
+        return;
+      }
+      displayVideo.srcObject = stream;
+      void displayVideo.play().catch(() => undefined);
+      displayTrack = stream.getVideoTracks()[0] ?? null;
+      if (displayTrack) displayTrack.addEventListener("ended", onScreenEnded);
+      await awaitPlayable(displayVideo);
+      sizeCanvasFromDisplay();
+    }
+
+    function ensureAudioGraph(): MediaStreamAudioDestinationNode {
+      if (!audioContext) audioContext = new AudioContext();
+      if (audioContext.state === "suspended") void audioContext.resume();
+      if (!audioDestination) audioDestination = audioContext.createMediaStreamDestination();
+      return audioDestination;
+    }
+
+    function connectAudioSource(stream: MediaStream | null): void {
+      if (!stream || audioSourceNodes.has(stream)) return;
+      if (stream.getAudioTracks().length === 0) return;
+      const destination = ensureAudioGraph();
+      const node = audioContext!.createMediaStreamSource(stream);
+      node.connect(destination);
+      audioSourceNodes.set(stream, node);
+    }
+
+    function setAudioSources(sources: {
+      micStream: MediaStream | null;
+      tabStream: MediaStream | null;
+    }): void {
+      const wanted = new Set(
+        [sources.micStream, sources.tabStream].filter((s): s is MediaStream => s !== null)
+      );
+      for (const [stream, node] of audioSourceNodes) {
+        if (!wanted.has(stream)) {
+          node.disconnect();
+          audioSourceNodes.delete(stream);
+        }
+      }
+      for (const stream of wanted) connectAudioSource(stream);
     }
 
     function draw(): void {
       if (paused || disposed) return;
       frameHandle = requestAnimationFrame(draw);
 
-      if (displayVideo.readyState >= 2) {
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (hasDisplay && displayVideo.readyState >= 2) {
         ctx.drawImage(displayVideo, 0, 0, canvas.width, canvas.height);
+      } else if (!hasDisplay && cameraVideo && cameraVideo.readyState >= 2) {
+        // Camera-only: the webcam fills the whole frame.
+        drawVideoCover(ctx, cameraVideo, 0, 0, canvas.width, canvas.height);
       }
 
-      if (overlayEnabled && cameraVideo && cameraVideo.readyState >= 2) {
-        const rect = computeOverlayRect(
-          canvas.width,
-          canvas.height,
-          cameraAspect,
-          options.overlay.corner,
-          options.overlay.size
-        );
-        const radius = Math.min(12, Math.floor(rect.height / 4));
-        if (typeof ctx.roundRect === "function") {
-          ctx.beginPath();
-          ctx.roundRect(rect.x, rect.y, rect.width, rect.height, radius);
-          ctx.clip();
-          ctx.drawImage(cameraVideo, rect.x, rect.y, rect.width, rect.height);
-          ctx.restore();
-        } else {
-          ctx.drawImage(cameraVideo, rect.x, rect.y, rect.width, rect.height);
-        }
+      // Webcam picture-in-picture only makes sense when a screen is the base.
+      if (hasDisplay && overlayEnabled && cameraVideo && cameraVideo.readyState >= 2) {
+        const rect = denormalizeRect(live.overlayRect(), canvas.width, canvas.height);
+        ctx.save();
+        applyShapeClip(ctx, live.overlayShape(), rect.x, rect.y, rect.width, rect.height);
+        drawVideoCover(ctx, cameraVideo, rect.x, rect.y, rect.width, rect.height);
+        ctx.restore();
+      }
+
+      for (const stroke of live.annotations()) {
+        drawAnnotation(ctx, stroke, canvas.width, canvas.height);
       }
     }
 
@@ -133,9 +189,22 @@ export function useScreenRecorder() {
         throw new Error("This browser cannot record video (no supported codec).");
       }
 
-      await setupCanvasSize();
+      await bindDisplay(options.displayStream);
       if (options.cameraStream) bindCamera(options.cameraStream);
-      const audioTrack = await setupAudio();
+      if (!hasDisplay && cameraVideo) {
+        await awaitPlayable(cameraVideo);
+        sizeCanvasFromCamera();
+      }
+      if (canvas.width < 2 || canvas.height < 2) {
+        canvas.width = 1280;
+        canvas.height = 720;
+      }
+
+      setAudioSources({ micStream: options.micStream, tabStream: options.tabStream });
+      const audioTrack = audioDestination?.stream.getAudioTracks()[0] ?? null;
+
+      // Prime the first frame before capturing so the stream never starts black.
+      draw();
 
       const canvasStream = canvas.captureStream(frameRate);
       const videoTrack = canvasStream.getVideoTracks()[0];
@@ -160,12 +229,7 @@ export function useScreenRecorder() {
         }
       });
 
-      if (displayTrack) {
-        displayTrack.addEventListener("ended", onScreenEnded);
-      }
-
       recorder.start(1000);
-      draw();
     }
 
     function onScreenEnded(): void {
@@ -176,6 +240,16 @@ export function useScreenRecorder() {
       dispose();
       throw error instanceof Error ? error : new Error("Could not start the recorder.");
     });
+
+    async function capturePoster(): Promise<Blob | null> {
+      try {
+        return await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.7);
+        });
+      } catch {
+        return null;
+      }
+    }
 
     function stopInternal(): Promise<Blob> {
       if (stopped) {
@@ -205,14 +279,18 @@ export function useScreenRecorder() {
       disposed = true;
       if (frameHandle !== null) cancelAnimationFrame(frameHandle);
       if (displayTrack) displayTrack.removeEventListener("ended", onScreenEnded);
-      if (displayTrack && displayTrack.readyState === "live") displayTrack.stop();
-      const { cameraStream, micStream, tabStream } = options;
-      for (const stream of [cameraStream, micStream, tabStream]) {
-        if (!stream) continue;
-        for (const track of stream.getTracks()) track.stop();
+      // The store owns the camera/mic streams and releases them separately; the
+      // engine only owns the display capture (which it may have swapped).
+      if (displayStream) {
+        for (const track of displayStream.getTracks()) track.stop();
+      }
+      if (options.tabStream && options.tabStream !== displayStream) {
+        for (const track of options.tabStream.getTracks()) track.stop();
       }
       if (cameraVideo) cameraVideo.srcObject = null;
       displayVideo.srcObject = null;
+      for (const node of audioSourceNodes.values()) node.disconnect();
+      audioSourceNodes.clear();
       if (audioContext && audioContext.state !== "closed") {
         void audioContext.close();
         audioContext = null;
@@ -241,6 +319,11 @@ export function useScreenRecorder() {
       setCameraStream(stream: MediaStream | null): void {
         bindCamera(stream);
       },
+      setDisplayStream(stream: MediaStream | null): void {
+        void bindDisplay(stream);
+      },
+      setAudioSources,
+      capturePoster,
       dispose
     };
   }

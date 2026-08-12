@@ -1,20 +1,37 @@
 <script setup lang="ts">
+import { useTemplateRef, watch } from "vue";
+
 const store = useScreenRecorderStore();
+
+// The <video> is always mounted (never v-if) so switching streams never
+// remounts it — that remount was what made the preview flash on then off.
+const videoRef = useTemplateRef<HTMLVideoElement>("video");
+
+watch(
+  () => store.cameraStream,
+  (stream) => {
+    const el = videoRef.value;
+    if (!el) return;
+    el.srcObject = stream;
+    if (stream) void el.play().catch(() => undefined);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <div class="bg-muted relative aspect-video overflow-hidden rounded-xl">
     <video
-      v-if="store.cameraStream"
-      :src-object="store.cameraStream"
+      ref="video"
       autoplay
       muted
       playsinline
-      class="absolute inset-0 h-full w-full object-cover"
+      class="absolute inset-0 h-full w-full object-cover transition-opacity duration-300"
+      :class="store.cameraStream ? 'opacity-100' : 'opacity-0'"
       data-testid="camera-preview"
     />
     <div
-      v-else
+      v-if="!store.cameraStream"
       class="text-dimmed absolute inset-0 flex flex-col items-center justify-center gap-2"
     >
       <UIcon name="i-lucide-video-off" class="size-10" />
@@ -28,8 +45,8 @@ const store = useScreenRecorderStore();
         class="size-1.5 rounded-full"
         :class="store.cameraStream ? 'bg-emerald-500' : 'bg-dimmed'"
       />
-      <span :class="store.cameraStream ? 'text-emerald-600' : 'text-dimmed'">
-        {{ store.cameraStream ? "Webcam on" : "Webcam off" }}
+      <span :class="store.cameraStream ? 'text-emerald-600 dark:text-emerald-400' : 'text-dimmed'">
+        {{ store.cameraStream ? "Camera live" : "Camera off" }}
       </span>
     </span>
   </div>

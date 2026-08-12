@@ -1,16 +1,25 @@
 import { defineStore } from "pinia";
 import type {
-  OverlaySize,
+  NormalizedRect,
   RecorderDevices,
   RecorderFrameRate,
+  RecorderLiveState,
+  RecorderMode,
   RecorderResolution,
   RecorderResult,
   RecorderSession,
   RecorderStatus,
-  WebcamCorner
+  StoredRecording,
+  WebcamCorner,
+  WebcamShape
 } from "~/types/screenRecorder";
 import { defaultRecorderSettings, parseRecorderSettings } from "~/schemas/screenRecorder";
-import { isScreenRecordingSupported, recordingFileName } from "~/utils/screenRecorder";
+import {
+  clampNormalizedRect,
+  isCameraRecordingSupported,
+  isScreenRecordingSupported,
+  recordingFileName
+} from "~/utils/screenRecorder";
 
 const STORAGE_KEY = "ono-toolkit-screen-recorder-settings";
 const ELAPSED_TICK_MS = 250;
@@ -23,6 +32,11 @@ function mediaDevices(): MediaDevices | null {
   return typeof navigator !== "undefined" ? navigator.mediaDevices : null;
 }
 
+function makeId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `rec-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+}
+
 export const useScreenRecorderStore = defineStore("screenRecorder", {
   state: () => ({
     settings: defaultRecorderSettings(),
@@ -32,7 +46,11 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
     micStream: null as MediaStream | null,
     session: null as RecorderSession | null,
     canvasEl: null as HTMLCanvasElement | null,
+    /** Whether a screen capture is currently part of the composite. */
+    displayActive: false,
     overlayVisible: false,
+    /** True while the camera preview/acquire is in flight (guards the flash bug). */
+    cameraBusy: false,
     elapsedMs: 0,
     result: null as RecorderResult | null,
     errorMessage: null as string | null,
@@ -65,13 +83,14 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
     },
 
     /**
-     * Hydrates the remembered preferences and resumes the webcam when the
-     * stored default has it on (Zoom-lobby behaviour), then refreshes the
-     * device list. Call once from the page's onMounted.
+     * Hydrates the remembered preferences and warms up the webcam when the
+     * chosen mode wants it, then refreshes the device list. Called once from the
+     * page's onMounted.
      */
     async restoreSession(): Promise<void> {
       this.hydrate();
-      if (this.settings.webcamOn && !this.cameraStream) {
+      const wantsCamera = this.settings.recordMode !== "screen" || this.settings.webcamOn;
+      if (wantsCamera && !this.cameraStream) {
         try {
           await this.acquireCameraStream();
         } catch {
@@ -106,20 +125,28 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
       if (!devices?.getUserMedia) {
         throw new Error("This browser cannot access the camera.");
       }
-      const stream = await devices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          ...(this.settings.cameraDeviceId
-            ? { deviceId: { exact: this.settings.cameraDeviceId } }
-            : {})
-        },
-        audio: false
-      });
-      this.releaseCameraStream();
-      this.cameraStream = markRaw(stream);
-      this.session?.setCameraStream(this.cameraStream);
-      await this.loadDevices();
+      // Guard against overlapping acquisitions — the reason the preview used to
+      // flash on and immediately off (a second acquire tore down the first).
+      if (this.cameraBusy) return;
+      this.cameraBusy = true;
+      try {
+        const stream = await devices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            ...(this.settings.cameraDeviceId
+              ? { deviceId: { exact: this.settings.cameraDeviceId } }
+              : {})
+          },
+          audio: false
+        });
+        this.releaseCameraStream();
+        this.cameraStream = markRaw(stream);
+        this.session?.setCameraStream(this.cameraStream);
+        await this.loadDevices();
+      } finally {
+        this.cameraBusy = false;
+      }
     },
 
     async acquireMicStream(): Promise<void> {
@@ -149,6 +176,25 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
         for (const track of this.micStream.getTracks()) track.stop();
       }
       this.micStream = null;
+    },
+
+    /** Chooses what to capture on the "What do you want to record?" step. */
+    async setRecordMode(mode: RecorderMode): Promise<void> {
+      this.settings.recordMode = mode;
+      this.settings.webcamOn = mode !== "screen";
+      this.persist();
+      const wantsCamera = mode !== "screen";
+      if (wantsCamera && !this.cameraStream) {
+        try {
+          await this.acquireCameraStream();
+        } catch (error) {
+          this.settings.webcamOn = false;
+          this.persist();
+          this.fail(error);
+        }
+      } else if (!wantsCamera && !this.cameraStream) {
+        this.releaseCameraStream();
+      }
     },
 
     async setWebcamOn(enabled: boolean): Promise<void> {
@@ -191,7 +237,7 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
     async setCameraDevice(deviceId: string | null): Promise<void> {
       this.settings.cameraDeviceId = deviceId;
       this.persist();
-      if (this.settings.webcamOn) {
+      if (this.cameraStream || this.settings.webcamOn) {
         try {
           await this.acquireCameraStream();
         } catch (error) {
@@ -221,8 +267,14 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
       this.persist();
     },
 
-    setOverlaySize(size: OverlaySize): void {
-      this.settings.overlaySize = size;
+    setOverlayShape(shape: WebcamShape): void {
+      this.settings.overlayShape = shape;
+      this.persist();
+    },
+
+    /** Updates the freeform webcam overlay geometry (drag/resize on the stage). */
+    setOverlayRect(rect: NormalizedRect): void {
+      this.settings.overlayRect = clampNormalizedRect(rect);
       this.persist();
     },
 
@@ -258,6 +310,33 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
       this.setOverlayVisible(true);
     },
 
+    /** Adds a screen capture to a running camera-only session. */
+    async addScreenMidSession(): Promise<void> {
+      if (!this.session || this.displayActive) return;
+      const devices = mediaDevices();
+      if (!devices?.getDisplayMedia) {
+        this.fail(new Error("This browser does not support screen capture."));
+        return;
+      }
+      try {
+        const displayStream = await devices.getDisplayMedia({
+          video: { frameRate: { ideal: this.settings.frameRate } },
+          audio: this.settings.systemAudio
+        });
+        this.session.setDisplayStream(markRaw(displayStream));
+        this.displayActive = true;
+        // The camera now becomes a picture-in-picture overlay on top of the screen.
+        this.overlayVisible = this.cameraStream !== null;
+        this.session.setOverlayEnabled(this.overlayVisible);
+        this.session.setAudioSources({
+          micStream: this.settings.micOn ? this.micStream : null,
+          tabStream: this.settings.systemAudio ? displayStream : null
+        });
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "NotAllowedError")) this.fail(error);
+      }
+    },
+
     startElapsedTimer(): void {
       this.stopElapsedTimer();
       this.timerHandle = setInterval(() => {
@@ -277,10 +356,28 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
       this.canvasEl = canvas;
     },
 
+    /** Builds the live accessors the engine polls each frame. */
+    buildLiveState(): RecorderLiveState {
+      const annotations = useRecorderAnnotations();
+      return {
+        overlayEnabled: () => this.overlayVisible,
+        overlayRect: () => this.settings.overlayRect,
+        overlayShape: () => this.settings.overlayShape,
+        annotations: () => annotations.snapshot()
+      };
+    },
+
     async startRecording(): Promise<void> {
       if (this.hasSession || this.status === "done") return;
-      if (!isScreenRecordingSupported()) {
+      const mode = this.settings.recordMode;
+      const wantScreen = mode !== "camera";
+
+      if (wantScreen && !isScreenRecordingSupported()) {
         this.fail(new Error("This browser does not support screen recording."));
+        return;
+      }
+      if (!wantScreen && !isCameraRecordingSupported()) {
+        this.fail(new Error("This browser does not support camera recording."));
         return;
       }
       if (!this.canvasEl) {
@@ -289,31 +386,36 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
       }
       const canvas = this.canvasEl;
       this.errorMessage = null;
+      const wantCamera = mode === "camera" || this.settings.webcamOn;
+
       try {
-        if (this.settings.webcamOn && !this.cameraStream) await this.acquireCameraStream();
+        if (wantCamera && !this.cameraStream) await this.acquireCameraStream();
         if (this.settings.micOn && !this.micStream) await this.acquireMicStream();
 
-        const devices = mediaDevices();
-        if (!devices?.getDisplayMedia) {
-          throw new Error("This browser does not support screen capture.");
+        let displayStream: MediaStream | null = null;
+        if (wantScreen) {
+          const devices = mediaDevices();
+          if (!devices?.getDisplayMedia) {
+            throw new Error("This browser does not support screen capture.");
+          }
+          displayStream = markRaw(
+            await devices.getDisplayMedia({
+              video: { frameRate: { ideal: this.settings.frameRate } },
+              audio: this.settings.systemAudio
+            })
+          );
         }
-        const displayStream = await devices.getDisplayMedia({
-          video: { frameRate: { ideal: this.settings.frameRate } },
-          audio: this.settings.systemAudio
-        });
 
         const { createSession } = useScreenRecorder();
         const session = createSession({
           canvas,
           displayStream,
-          cameraStream: this.cameraStream,
+          cameraStream: wantCamera ? this.cameraStream : null,
           micStream: this.settings.micOn ? this.micStream : null,
           tabStream: this.settings.systemAudio ? displayStream : null,
-          overlay: {
-            enabled: this.settings.webcamOn && this.cameraStream !== null,
-            corner: this.settings.overlayCorner,
-            size: this.settings.overlaySize
-          },
+          // The PiP overlay only applies when a screen is the base layer.
+          overlay: { enabled: wantScreen && wantCamera && this.cameraStream !== null },
+          live: this.buildLiveState(),
           resolution: this.settings.resolution,
           frameRate: this.settings.frameRate,
           onScreenEnded: () => {
@@ -323,7 +425,8 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
         this.session = session;
         await session.ready;
 
-        this.overlayVisible = this.settings.webcamOn && this.cameraStream !== null;
+        this.displayActive = wantScreen;
+        this.overlayVisible = wantScreen && wantCamera && this.cameraStream !== null;
         this.elapsedMs = 0;
         this.startedAtMs = Date.now();
         this.pausedAccumMs = 0;
@@ -375,24 +478,49 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
         this.pauseStartedAtMs = null;
       }
       this.elapsedMs = Date.now() - this.startedAtMs - this.pausedAccumMs;
+      const poster = await session.capturePoster().catch(() => null);
       try {
         const blob = await session.stop();
         const url = URL.createObjectURL(blob);
+        const fileName = recordingFileName(new Date(), extensionFromMime(blob.type));
         this.result = {
           blob,
           url,
-          fileName: recordingFileName(new Date(), extensionFromMime(blob.type)),
+          fileName,
           mimeType: blob.type,
-          durationMs: this.elapsedMs
+          durationMs: this.elapsedMs,
+          posterUrl: poster ? URL.createObjectURL(poster) : null
         };
         this.status = "done";
+        await this.saveToLibrary(blob, fileName, poster);
       } catch (error) {
         this.fail(error);
       } finally {
         this.session = null;
+        this.displayActive = false;
         this.releaseCameraStream();
         this.releaseMicStream();
         this.overlayVisible = false;
+        useRecorderAnnotations().clear();
+      }
+    },
+
+    /** Persists a finished recording to the local IndexedDB library. */
+    async saveToLibrary(blob: Blob, fileName: string, poster: Blob | null): Promise<void> {
+      try {
+        const recording: StoredRecording = {
+          id: makeId(),
+          name: fileName,
+          blob,
+          mimeType: blob.type,
+          durationMs: this.elapsedMs,
+          size: blob.size,
+          createdAt: Date.now(),
+          thumbnail: poster
+        };
+        await useRecordingsLibrary().add(recording);
+      } catch {
+        /* library persistence is best-effort; the in-memory result still works */
       }
     },
 
@@ -404,15 +532,20 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
       this.stopElapsedTimer();
       this.releaseCameraStream();
       this.releaseMicStream();
-      if (this.result) URL.revokeObjectURL(this.result.url);
+      if (this.result) {
+        URL.revokeObjectURL(this.result.url);
+        if (this.result.posterUrl) URL.revokeObjectURL(this.result.posterUrl);
+      }
       this.result = null;
       this.status = "idle";
+      this.displayActive = false;
       this.elapsedMs = 0;
       this.startedAtMs = 0;
       this.pausedAccumMs = 0;
       this.pauseStartedAtMs = null;
       this.overlayVisible = false;
       this.errorMessage = null;
+      useRecorderAnnotations().clear();
     }
   }
 });
