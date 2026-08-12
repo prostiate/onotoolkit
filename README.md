@@ -64,6 +64,20 @@ and are never sent to a server.
   a target file size - the tool binary-searches quality and scale to hit the
   budget, in JPG, PNG, WebP, GIF, BMP, ICO, or AVIF.
 
+### Video
+
+- **Screen Recorder** - a local-first recording studio built on native browser
+  APIs (`getDisplayMedia` / `getUserMedia`, canvas compositing,
+  `canvas.captureStream()` + `MediaRecorder`) - no uploads, no time limits.
+  Choose what to capture up front (screen, screen + camera, or camera only), then
+  change your mind mid-recording: add a screen to a camera session, or drop in a
+  webcam on a screen session. The webcam bubble is a movable, resizable
+  picture-in-picture with circle / rounded / square shapes, and a draggable pen
+  dock lets you annotate (pen, highlighter, rectangle, arrow) with the strokes
+  burned into the final video. Microphone and system audio are mixed through the
+  Web Audio graph, and every finished recording is saved to a persistent, on-device
+  **library** (IndexedDB) with poster thumbnails, rename, download, and delete.
+
 ### Developer
 
 - **JWT Debugger** (RFC 7519) - **Decoder** and **Encoder** tabs powered by
@@ -102,6 +116,8 @@ It may return in the future if spare time allows.
 - **[motion-v](https://motion.dev/docs/vue)** for animation
 - **[jose](https://github.com/panva/jose)** (JWT), **[Ghostscript-WASM](https://github.com/jsscheller/ghostscript-wasm)** + **[pdf-lib](https://pdf-lib.js.org/)** + **[pdf.js](https://mozilla.github.io/pdf.js/)** (PDF), **[CodeMirror 6](https://codemirror.net/)** (JSON editor)
 - **[@imgly/background-removal](https://github.com/imgly/background-removal-js)** + **[onnxruntime-web](https://onnxruntime.ai/docs/tutorials/web/)** with **[MI-GAN](https://github.com/Picsart-AI-Research/MI-GAN)** (in-browser image AI), **[jSquash](https://github.com/jamsinclair/jSquash)** (MozJPEG/oxipng/WebP image compression)
+- **MediaRecorder** + canvas compositing + **Web Audio** for in-browser screen
+  recording, with recordings persisted locally in **IndexedDB**.
 - Heavy work runs in **Web Workers**; WASM is loaded lazily, client-side only.
 - **TypeScript** throughout (no `any`), **ESLint** + **Prettier**, **Vitest** + **Playwright**.
 
