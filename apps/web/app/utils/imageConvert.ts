@@ -100,6 +100,96 @@ export interface EncodeSettings {
   bgColor: string;
 }
 
+/** The standard IJG luminance quantization table (quality 50, scale factor 100). */
+const IJG_LUMA_QUANT = [
+  16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56,
+  14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113,
+  92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99
+];
+
+/**
+ * Inverts one quant-table entry back to a quality factor. Encoders scale the
+ * standard table by S (5000/q for q<=50, 200-2q for q>50), so the scale is
+ * recoverable per entry as S_i = 100*v/std and inverted back to q.
+ */
+function qualityFromQuantEntry(std: number, v: number): number {
+  const scale = (100 * v) / std;
+  return scale > 100 ? 5000 / scale : (200 - scale) / 2;
+}
+
+/** Reads the first usable quantization table from a DQT segment payload. */
+function readQuantTable(bytes: Uint8Array, start: number, end: number): number[] | null {
+  let offset = start;
+  let first: number[] | null = null;
+  while (offset < end) {
+    const info = bytes[offset]!;
+    offset += 1;
+    if (offset >= end) return first;
+    const precision = info >> 4;
+    const tableId = info & 0x0f;
+    const size = 64 * (precision === 1 ? 2 : 1);
+    if (offset + size > end) return first;
+    const table: number[] = [];
+    for (let k = 0; k < 64; k += 1) {
+      table.push(
+        precision === 1
+          ? (bytes[offset + k * 2]! << 8) | bytes[offset + k * 2 + 1]!
+          : bytes[offset + k]!
+      );
+    }
+    if (tableId === 0) return table;
+    if (first === null) first = table;
+    offset += size;
+  }
+  return first;
+}
+
+/**
+ * Estimates the quality factor a JPEG was encoded with by scanning the DQT
+ * segment for the luma quantization table and inverting the IJG scale-factor
+ * mapping (5000/q for q<=50, 200-2q for q>50). Returns null when the bytes
+ * are not a JPEG or carry no usable quantization table.
+ */
+export function estimateJpegQuality(bytes: Uint8Array): number | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
+  let i = 2;
+  while (i + 3 < bytes.length) {
+    if (bytes[i] !== 0xff) return null;
+    let marker = bytes[i + 1]!;
+    // Skipped filler 0xFF bytes are allowed between markers.
+    while (marker === 0xff && i + 2 < bytes.length) {
+      i += 1;
+      marker = bytes[i + 1]!;
+    }
+    // EOI or SOS without any DQT before it.
+    if (marker === 0xd9 || marker === 0xda) return null;
+    // Standalone markers carry no length field.
+    if (marker === 0x01 || marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7)) {
+      i += 2;
+      continue;
+    }
+    const length = (bytes[i + 2]! << 8) | bytes[i + 3]!;
+    if (length < 2 || i + 2 + length > bytes.length) return null;
+    if (marker === 0xdb) {
+      const table = readQuantTable(bytes, i + 4, i + 2 + length);
+      if (table === null) return null;
+      let sum = 0;
+      let count = 0;
+      for (let k = 0; k < 64; k += 1) {
+        const std = IJG_LUMA_QUANT[k]!;
+        const v = table[k]!;
+        if (v <= 0) continue;
+        sum += qualityFromQuantEntry(std, v);
+        count += 1;
+      }
+      if (count === 0) return null;
+      return Math.min(100, Math.max(1, Math.round(sum / count)));
+    }
+    i += 2 + length;
+  }
+  return null;
+}
+
 /** One PNG-embedded icon inside an ICO container. */
 export interface IcoEntry {
   /** Icon dimension in pixels (1-256; 256 is stored as 0 in the header). */

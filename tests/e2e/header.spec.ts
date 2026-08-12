@@ -33,6 +33,8 @@ test.describe("header navigation", () => {
 
     await page.getByRole("button", { name: "Open menu" }).click();
     const header = page.locator("header");
+    // Tool links live in collapsible groups; expand the Developer one first.
+    await header.getByRole("button", { name: "Developer" }).click();
     await header.getByRole("link", { name: /JWT Debugger/ }).click();
     await expect(page).toHaveURL(/\/tools\/jwt$/);
   });

@@ -3,6 +3,7 @@ import {
   FORMAT_INFO,
   encodeBmpRgba,
   encodeIco,
+  estimateJpegQuality,
   needsFlatten,
   planIcoSizes,
   type ConvertFormat,
@@ -143,6 +144,17 @@ export function useImageConvert() {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Reads the source file's own quality so "use source quality" can re-encode
+   * lossy outputs at the same factor: estimated from JPEG quant tables, with a
+   * high default (95) for lossless sources that carry no quality.
+   */
+  async function estimateSourceQuality(file: File): Promise<number> {
+    if (import.meta.server) return 95;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    return estimateJpegQuality(bytes) ?? 95;
   }
 
   /** Converts one file to the requested format, entirely in the browser. */
@@ -297,5 +309,13 @@ export function useImageConvert() {
     };
   }
 
-  return { convertFile, resizeFile, resizeRgba, canEncodeAvif, encodeIcoRaster, CONVERT_FORMATS };
+  return {
+    convertFile,
+    resizeFile,
+    resizeRgba,
+    canEncodeAvif,
+    estimateSourceQuality,
+    encodeIcoRaster,
+    CONVERT_FORMATS
+  };
 }

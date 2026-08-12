@@ -45,8 +45,15 @@ test.describe("image converter", () => {
   test("shows the tool and its dropzone", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Image Converter" })).toBeVisible();
     await expect(page.getByText(/Drop your images here/)).toBeVisible();
+    // Format buttons appear together with the controls once files are queued.
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([{ name: "a.png", mimeType: "image/png", buffer: png }]);
     await expect(page.getByRole("button", { name: "ICO", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "AVIF", exact: true })).toBeVisible();
+    // The quality section (and its source-quality checkbox) needs a lossy format.
+    await page.getByRole("button", { name: "JPEG", exact: true }).click();
+    await expect(page.getByRole("checkbox", { name: "Use source quality" })).toBeVisible();
   });
 
   test("converts PNG to ICO with a valid multi-size container", async ({ page }) => {
@@ -65,19 +72,20 @@ test.describe("image converter", () => {
     expect(download.suggestedFilename()).toMatch(/\.ico$/);
 
     const ico = await readDownload(download);
-    // ICONDIR: reserved(2)=0, type(2)=1, count(2)=6 (16/32/48/64/128/256)
+    // ICONDIR: reserved(2)=0, type(2)=1, count(2)=5 (16/32/48/64/128 - 256 px
+    // does not fit a 200 px source).
     expect(ico.readUInt16LE(0)).toBe(0);
     expect(ico.readUInt16LE(2)).toBe(1);
-    expect(ico.readUInt16LE(4)).toBe(6);
+    expect(ico.readUInt16LE(4)).toBe(5);
     // Each ICONDIRENTRY points at a PNG payload (89 50 4E 47...).
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 5; i += 1) {
       const entry = 6 + i * 16;
       const size = ico[entry] === 0 ? 256 : ico[entry];
       expect(ico[entry + 1]).toBe(ico[entry]);
       expect(ico.readUInt32LE(entry + 8)).toBeGreaterThan(0);
       const offset = ico.readUInt32LE(entry + 12);
       expect(ico.subarray(offset, offset + 4).toString("hex")).toBe("89504e47");
-      expect([16, 32, 48, 64, 128, 256]).toContain(size);
+      expect([16, 32, 48, 64, 128]).toContain(size);
     }
   });
 
@@ -117,13 +125,13 @@ test.describe("image converter", () => {
 
   test("converts PNG to WebP, GIF, and BMP", async ({ page }) => {
     test.setTimeout(180_000);
-    const expectations: { format: string; magic: string }[] = [
-      { format: "WebP", magic: "52494646" }, // RIFF
-      { format: "GIF", magic: "47494638" }, // GIF8
-      { format: "BMP", magic: "424d" } // BM
+    const expectations: { format: string; magic: string; bytes: number }[] = [
+      { format: "WebP", magic: "52494646", bytes: 4 }, // RIFF
+      { format: "GIF", magic: "47494638", bytes: 4 }, // GIF8
+      { format: "BMP", magic: "424d", bytes: 2 } // BM
     ];
 
-    for (const { format, magic } of expectations) {
+    for (const { format, magic, bytes } of expectations) {
       await page
         .locator('input[type="file"]')
         .setInputFiles([{ name: "a.png", mimeType: "image/png", buffer: png }]);
@@ -135,7 +143,7 @@ test.describe("image converter", () => {
         page.getByRole("button", { name: "Download converted image" }).click()
       ]);
       expect(download.suggestedFilename()).toMatch(new RegExp(`\\.${format.toLowerCase()}$`));
-      expect((await readDownload(download)).subarray(0, 4).toString("hex")).toBe(magic);
+      expect((await readDownload(download)).subarray(0, bytes).toString("hex")).toBe(magic);
       await page.getByRole("button", { name: "Start over" }).click();
     }
   });
@@ -181,6 +189,7 @@ test.describe("image converter", () => {
     await page.getByRole("button", { name: "Convert images" }).click();
     await expect(page.getByText(/Converted 2 of 2/)).toBeVisible({ timeout: 90_000 });
 
+    await page.getByRole("button", { name: "Download all" }).click();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.getByRole("menuitem", { name: "As ZIP" }).click()
@@ -212,5 +221,60 @@ test.describe("image converter", () => {
       page.getByRole("button", { name: "Download converted image" }).click()
     ]);
     expect(download.suggestedFilename()).toMatch(/\.avif$/);
+  });
+
+  test("applies per-image format overrides while the rest follow the bulk format", async ({
+    page
+  }) => {
+    test.setTimeout(120_000);
+    await page.locator('input[type="file"]').setInputFiles([
+      { name: "a.png", mimeType: "image/png", buffer: png },
+      { name: "b.png", mimeType: "image/png", buffer: png }
+    ]);
+    // Bulk format = JPEG; image "a" overrides to WebP.
+    await page.getByRole("button", { name: "JPEG", exact: true }).click();
+    await page.getByLabel("Output format for a.png").click();
+    await page.getByRole("option", { name: "WebP", exact: true }).click();
+    await page.getByRole("button", { name: "Convert images" }).click();
+    await expect(page.getByText(/Converted 2 of 2/)).toBeVisible({ timeout: 90_000 });
+
+    const [aDownload] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download converted image" }).first().click()
+    ]);
+    expect(aDownload.suggestedFilename()).toBe("a-converted.webp");
+    const [bDownload] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download converted image" }).nth(1).click()
+    ]);
+    expect(bDownload.suggestedFilename()).toBe("b-converted.jpg");
+  });
+
+  test("use source quality swaps in per-image quality mode", async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.locator('input[type="file"]').setInputFiles([
+      { name: "photo.png", mimeType: "image/png", buffer: png },
+      { name: "photo.jpg", mimeType: "image/jpeg", buffer: await makeJpeg(page) }
+    ]);
+    await page.getByRole("button", { name: "JPEG", exact: true }).click();
+
+    // Fixed quality controls are visible first.
+    await expect(page.getByLabel("Conversion quality")).toBeVisible();
+    await expect(page.getByLabel("Quality for photo.png")).toBeVisible();
+
+    // Checking the checkbox hides the fixed quality slider and per-image inputs.
+    await page.getByLabel("Use source quality").check();
+    await expect(page.getByLabel("Conversion quality")).toBeHidden();
+    await expect(page.getByLabel("Quality for photo.png")).toBeHidden();
+    await expect(page.getByText(/estimated from JPEG files/)).toBeVisible();
+
+    // Converting still succeeds; the JPEG source re-encodes at its own quality.
+    await page.getByRole("button", { name: "Convert images" }).click();
+    await expect(page.getByText(/Converted 2 of 2/)).toBeVisible({ timeout: 90_000 });
+
+    // Unchecking restores the fixed controls.
+    await page.getByLabel("Use source quality").uncheck();
+    await expect(page.getByLabel("Conversion quality")).toBeVisible();
+    await expect(page.getByLabel("Quality for photo.png")).toBeVisible();
   });
 });

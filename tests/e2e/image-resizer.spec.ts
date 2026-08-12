@@ -26,6 +26,10 @@ test.describe("image resizer", () => {
   test("shows the tool and its dropzone", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Image Resizer" })).toBeVisible();
     await expect(page.getByText(/Drop your images here/)).toBeVisible();
+    // The resize controls only render once a file is queued.
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([{ name: "photo.png", mimeType: "image/png", buffer: png }]);
     await expect(page.getByRole("button", { name: "Percentage" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Exact size" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Target file size" })).toBeVisible();
@@ -91,20 +95,21 @@ test.describe("image resizer", () => {
     expect(bytes.length).toBeLessThanOrEqual(25 * 1024 + 512);
   });
 
-  test("quality slider changes JPEG output size (q10 < q90)", async ({ page }) => {
+  test("quality slider changes JPEG output size (low < high)", async ({ page }) => {
     test.setTimeout(180_000);
     const sizes: number[] = [];
 
-    for (const quality of [10, 90]) {
+    for (const quality of [30, 90]) {
       await page
         .locator('input[type="file"]')
         .setInputFiles([{ name: "photo.png", mimeType: "image/png", buffer: png }]);
       await page.getByRole("button", { name: "JPEG", exact: true }).click();
-      await page.getByLabel("Output quality").evaluate((el, value) => {
-        const slider = el as HTMLInputElement;
-        slider.value = String(value);
-        slider.dispatchEvent(new Event("input", { bubbles: true }));
-      }, quality);
+      // The Nuxt UI v3 slider is a Reka slider: click the track at a position
+      // matching the target value (slider range 30-100).
+      const track = page.getByLabel("Output quality");
+      const box = (await track.boundingBox())!;
+      const fraction = (quality - 30) / (100 - 30);
+      await track.click({ position: { x: box.width * fraction, y: box.height / 2 } });
       await page.getByRole("button", { name: "Resize images" }).click();
       await expect(page.getByText(/Resized 1 of 1/)).toBeVisible({ timeout: 90_000 });
       const [download] = await Promise.all([
@@ -128,6 +133,7 @@ test.describe("image resizer", () => {
     await page.getByRole("button", { name: "Resize images" }).click();
     await expect(page.getByText(/Resized 2 of 2/)).toBeVisible({ timeout: 90_000 });
 
+    await page.getByRole("button", { name: "Download all" }).click();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.getByRole("menuitem", { name: "As ZIP" }).click()

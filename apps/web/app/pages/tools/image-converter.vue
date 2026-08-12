@@ -2,7 +2,7 @@
 import { Motion } from "motion-v";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import type { ImageJobItem } from "~/stores/imageJob";
-import type { EncodeSettings } from "~/utils/imageConvert";
+import type { ConverterSettings } from "~/stores/imageConverter";
 import { formatBytes } from "~/utils/formatBytes";
 
 useSeoMeta({
@@ -42,6 +42,12 @@ function onDownload(id: string): void {
 }
 function onPreview(id: string): void {
   previewId.value = id;
+}
+
+/** "Use source quality" swaps the whole quality mode; stale overrides are cleared. */
+function onUseSourceQuality(value: boolean): void {
+  store.setSettings({ useSourceQuality: value });
+  if (value) store.clearOverrideFields(["quality"]);
 }
 
 async function onDownloadZip(): Promise<void> {
@@ -133,9 +139,10 @@ onBeforeUnmount(() => store.reset());
           :settings="store.settings"
           :show-transparency="store.items.some((item) => item.mayHaveAlpha)"
           :avif-supported="avifSupported"
-          @update:format="(v: EncodeSettings['format']) => store.setSettings({ format: v })"
+          @update:format="(v: ConverterSettings['format']) => store.setSettings({ format: v })"
           @update:quality="(v: number) => store.setSettings({ quality: v })"
           @update:bg-color="(v: string) => store.setSettings({ bgColor: v })"
+          @update:use-source-quality="onUseSourceQuality"
         />
 
         <Motion
@@ -164,9 +171,15 @@ onBeforeUnmount(() => store.reset());
           :items="store.items"
           badge-kind="format"
           download-aria-label="Download converted image"
+          show-per-item-settings
+          :bulk-format="store.settings.format"
+          :bulk-quality="store.settings.quality"
+          :use-source-quality="store.settings.useSourceQuality"
+          :avif-supported="avifSupported"
           @remove="store.remove"
           @download="onDownload"
           @preview="onPreview"
+          @settings-override="store.setSettingsOverride"
         />
 
         <UButton

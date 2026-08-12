@@ -6,6 +6,7 @@ import {
   detectSourceFormat,
   encodeBmpRgba,
   encodeIco,
+  estimateJpegQuality,
   needsFlatten,
   planIcoSizes
 } from "~/utils/imageConvert";
@@ -211,5 +212,109 @@ describe("planIcoSizes", () => {
   it("rejects non-positive dimensions", () => {
     expect(() => planIcoSizes(0, 100)).toThrow();
     expect(() => planIcoSizes(-1, 100)).toThrow();
+  });
+});
+
+describe("estimateJpegQuality", () => {
+  /** The standard IJG luminance quantization table. */
+  const IJG_LUMA = [
+    16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56,
+    14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113,
+    92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99
+  ];
+
+  /** Table libjpeg would emit for a given quality factor (mirrors jpeg_set_quality). */
+  function quantTableFor(quality: number): number[] {
+    const scale =
+      quality >= 100 ? 1 : quality <= 50 ? Math.floor(5000 / quality) : 200 - quality * 2;
+    return IJG_LUMA.map((std) => Math.max(1, Math.floor((std * scale + 50) / 100)));
+  }
+
+  /**
+   * Minimal JPEG byte stream: SOI, JFIF APP0, DQT (luma only), SOF0, EOI.
+   * Low quality factors produce table entries above 255, which real encoders
+   * store with 16-bit precision - mirror that here.
+   */
+  function jpegBytes(table: number[], precision: 0 | 1 = 0): Uint8Array {
+    const bytes: number[] = [0xff, 0xd8];
+    const app0 = [
+      0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00,
+      0x01, 0x00, 0x00
+    ];
+    bytes.push(...app0);
+    const dqt = [0xff, 0xdb, 0x00, precision === 1 ? 0x83 : 0x43, precision === 1 ? 0x10 : 0x00];
+    bytes.push(...dqt);
+    for (const value of table) {
+      if (precision === 1) bytes.push((value >> 8) & 0xff, value & 0xff);
+      else bytes.push(value);
+    }
+    bytes.push(0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11, 0x00);
+    bytes.push(0xff, 0xd9);
+    return new Uint8Array(bytes);
+  }
+
+  it("recovers known quality factors from synthetic quant tables", () => {
+    const cases: [number, 0 | 1][] = [
+      [1, 1],
+      [10, 1],
+      [25, 0],
+      [50, 0],
+      [75, 0],
+      [95, 0],
+      [100, 0]
+    ];
+    for (const [quality, precision] of cases) {
+      const estimate = estimateJpegQuality(jpegBytes(quantTableFor(quality), precision));
+      expect(Math.abs(estimate! - quality)).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it("uses the luma table when chroma tables are present", () => {
+    // DQT with 4-byte info: luma (id 0) + two chroma tables (id 1 and id 2).
+    const table = quantTableFor(75);
+    const bytes = new Uint8Array([
+      0xff,
+      0xd8,
+      0xff,
+      0xdb,
+      0x00,
+      0xc5,
+      0x00,
+      ...table,
+      0x01,
+      ...table,
+      0x02,
+      ...table
+    ]);
+    expect(Math.abs(estimateJpegQuality(bytes)! - 75)).toBeLessThanOrEqual(2);
+  });
+
+  it("reads 16-bit quant tables (high precision)", () => {
+    const table = quantTableFor(25);
+    const bytes: number[] = [0xff, 0xd8, 0xff, 0xdb, 0x00, 0x83, 0x10];
+    for (const value of table) bytes.push((value >> 8) & 0xff, value & 0xff);
+    bytes.push(0xff, 0xd9);
+    expect(Math.abs(estimateJpegQuality(new Uint8Array(bytes))! - 25)).toBeLessThanOrEqual(2);
+  });
+
+  it("returns null for non-JPEG bytes", () => {
+    expect(
+      estimateJpegQuality(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    ).toBeNull();
+    expect(estimateJpegQuality(new Uint8Array([]))).toBeNull();
+  });
+
+  it("returns null when no DQT segment appears before the scan data", () => {
+    const bytes = new Uint8Array([
+      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xda, 0x00, 0x02
+    ]);
+    expect(estimateJpegQuality(bytes)).toBeNull();
+  });
+
+  it("returns null for truncated bytes", () => {
+    const jpeg = jpegBytes(quantTableFor(75));
+    // Cut before the SOI ever starts and mid-DQT (table cut off).
+    expect(estimateJpegQuality(jpeg.subarray(0, 6))).toBeNull();
+    expect(estimateJpegQuality(jpeg.subarray(0, 40))).toBeNull();
   });
 });

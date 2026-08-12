@@ -80,26 +80,6 @@ const bgColorVisible = computed(
 const selectedMode = computed(
   () => modes.find((m) => m.value === props.settings.mode) ?? modes[0]!
 );
-
-const widthModel = computed({
-  get: () => props.settings.width ?? "",
-  set: (value: string) => {
-    const parsed = Number(value);
-    emit("update:settings", {
-      width: value.trim() === "" ? null : clampDimension(parsed)
-    });
-  }
-});
-
-const heightModel = computed({
-  get: () => props.settings.height ?? "",
-  set: (value: string) => {
-    const parsed = Number(value);
-    emit("update:settings", {
-      height: value.trim() === "" ? null : clampDimension(parsed)
-    });
-  }
-});
 </script>
 
 <template>
@@ -158,23 +138,39 @@ const heightModel = computed({
       <div v-if="settings.mode === 'dimensions'" class="flex flex-wrap items-center gap-3">
         <label class="text-muted w-28 shrink-0 text-xs font-medium">Dimensions</label>
         <input
-          v-model="widthModel"
+          :value="settings.width ?? ''"
           type="number"
           min="1"
           :max="RESIZE_MAX_DIMENSION"
           placeholder="Width"
           class="border-default w-24 rounded border bg-transparent px-2 py-1 text-xs"
           aria-label="Output width in pixels"
+          @input="
+            emit('update:settings', {
+              width:
+                ($event.target as HTMLInputElement).value.trim() === ''
+                  ? null
+                  : clampDimension(Number(($event.target as HTMLInputElement).value))
+            })
+          "
         />
         <span class="text-dimmed text-xs">×</span>
         <input
-          v-model="heightModel"
+          :value="settings.height ?? ''"
           type="number"
           min="1"
           :max="RESIZE_MAX_DIMENSION"
           placeholder="Height"
           class="border-default w-24 rounded border bg-transparent px-2 py-1 text-xs"
           aria-label="Output height in pixels"
+          @input="
+            emit('update:settings', {
+              height:
+                ($event.target as HTMLInputElement).value.trim() === ''
+                  ? null
+                  : clampDimension(Number(($event.target as HTMLInputElement).value))
+            })
+          "
         />
         <USelect
           :model-value="settings.fit"
