@@ -125,15 +125,22 @@ onBeforeUnmount(() => store.reset());
           <p class="text-muted text-sm font-medium">
             {{ store.items.length }} image{{ store.items.length > 1 ? "s" : "" }}
           </p>
-          <UButton
-            icon="i-lucide-trash-2"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            @click="store.reset()"
-          >
-            Clear all
-          </UButton>
+          <div class="flex items-center gap-2">
+            <AddFilesButton
+              accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,image/x-icon,image/vnd.microsoft.icon,image/avif,.jpg,.jpeg,.png,.webp,.gif,.bmp,.ico,.avif"
+              label="Add more images"
+              @select-files="onSelectFiles"
+            />
+            <UButton
+              icon="i-lucide-trash-2"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              @click="store.reset()"
+            >
+              Clear all
+            </UButton>
+          </div>
         </div>
 
         <ResizeControls

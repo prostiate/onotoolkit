@@ -35,6 +35,18 @@ test.describe("image resizer", () => {
     await expect(page.getByRole("button", { name: "Target file size" })).toBeVisible();
   });
 
+  test("adds more images after the first selection", async ({ page }) => {
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([{ name: "a.png", mimeType: "image/png", buffer: png }]);
+    await expect(page.getByText("1 image")).toBeVisible();
+
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Add more images" }).click();
+    await (await chooser).setFiles([{ name: "b.png", mimeType: "image/png", buffer: png }]);
+    await expect(page.getByText("2 images")).toBeVisible();
+  });
+
   test("resizes by percentage and reports the new dimensions", async ({ page }) => {
     test.setTimeout(120_000);
     await page

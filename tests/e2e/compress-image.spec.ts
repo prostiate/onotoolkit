@@ -21,6 +21,18 @@ test.describe("compress images", () => {
     await expect(page.getByText(/Drop your images here/)).toBeVisible();
   });
 
+  test("adds more images after the first selection", async ({ page }) => {
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles([{ name: "a.png", mimeType: "image/png", buffer: png }]);
+    await expect(page.getByText("1 image")).toBeVisible();
+
+    const chooser = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Add more images" }).click();
+    await (await chooser).setFiles([{ name: "b.png", mimeType: "image/png", buffer: png }]);
+    await expect(page.getByText("2 images")).toBeVisible();
+  });
+
   test("compresses a batch and downloads a ZIP", async ({ page }) => {
     test.setTimeout(120_000);
     await page.locator('input[type="file"]').setInputFiles([
