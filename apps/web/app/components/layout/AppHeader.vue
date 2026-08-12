@@ -14,7 +14,8 @@ const groupIcon: Record<ToolGroupId, string> = {
   pdf: "i-lucide-file-text",
   developer: "i-lucide-terminal",
   text: "i-lucide-type",
-  image: "i-lucide-image"
+  image: "i-lucide-image",
+  video: "i-lucide-clapperboard"
 };
 
 const menus = toolGroups.map((group) => {

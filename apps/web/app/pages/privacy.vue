@@ -19,7 +19,7 @@ const sections = [
   {
     icon: "i-lucide-database",
     title: "What is stored locally",
-    body: "The only thing kept in your browser is your theme preference (light or dark), saved in localStorage so the site remembers it. It stays on your device and is never sent anywhere. You can clear it anytime via your browser."
+    body: "Only preferences are kept in your browser, in localStorage, so the site remembers them: your theme preference (light or dark) and the Screen Recorder's pre-recording choices (webcam, microphone, system audio, overlay position and size, and quality). They stay on your device and are never sent anywhere. Recordings and files are never written to localStorage. You can clear everything anytime via your browser."
   },
   {
     icon: "i-lucide-box",
@@ -80,7 +80,7 @@ const sections = [
         class="text-primary font-medium hover:underline"
       >
         GitHub </a
-      >. Last updated 28 July 2026.
+      >. Last updated 12 August 2026.
     </p>
   </div>
 </template>

@@ -20,6 +20,11 @@ export const toolGroups: readonly ToolGroup[] = [
     id: "image",
     title: "Image",
     description: "Edit images in your browser - nothing is uploaded."
+  },
+  {
+    id: "video",
+    title: "Video",
+    description: "Record and capture video in your browser."
   }
 ] as const;
 
@@ -215,6 +220,17 @@ export const tools: readonly ToolDefinition[] = [
     status: "available",
     engine: "browser",
     route: "/tools/markdown"
+  },
+  {
+    slug: "screen-recorder",
+    title: "Screen Recorder",
+    description:
+      "Record your screen with webcam and mic - Zoom-style pre-check settings, remembered.",
+    icon: "i-lucide-video",
+    group: "video",
+    status: "available",
+    engine: "browser",
+    route: "/tools/screen-recorder"
   }
 ] as const;
 

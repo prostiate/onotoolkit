@@ -46,7 +46,8 @@ function accept(): void {
               <p class="text-highlighted text-sm font-semibold">Private by design</p>
               <p class="text-muted text-xs leading-relaxed">
                 Everything runs in your browser - your files and data never leave your device. No
-                accounts, no tracking. We store only your theme preference locally. See our
+                accounts, no tracking. We store only your preferences locally (such as your theme).
+                See our
                 <NuxtLink to="/privacy" class="text-primary font-medium hover:underline">
                   privacy notice </NuxtLink
                 >.

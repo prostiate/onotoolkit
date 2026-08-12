@@ -56,6 +56,7 @@ describe("tool registry", () => {
     expect(slugs).toContain("image-converter");
     expect(slugs).toContain("image-resizer");
     expect(slugs).toContain("edit-pdf");
+    expect(slugs).toContain("screen-recorder");
   });
 
   it("finds a tool by slug", () => {
@@ -72,6 +73,7 @@ describe("tool registry", () => {
     expect(getToolBySlug("image-converter")?.route).toBe("/tools/image-converter");
     expect(getToolBySlug("image-resizer")?.route).toBe("/tools/image-resizer");
     expect(getToolBySlug("edit-pdf")?.route).toBe("/tools/edit-pdf");
+    expect(getToolBySlug("screen-recorder")?.route).toBe("/tools/screen-recorder");
     expect(getToolBySlug("missing")).toBeUndefined();
   });
 
