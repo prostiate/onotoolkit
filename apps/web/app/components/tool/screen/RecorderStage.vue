@@ -95,7 +95,7 @@ function onDrawUp(): void {
     <!-- Annotation capture layer: only grabs pointer events while drawing. -->
     <div
       v-if="annotations.active.value"
-      class="absolute inset-0 cursor-crosshair"
+      class="absolute inset-0 touch-none cursor-crosshair"
       :class="dragMode ? '' : 'pointer-events-auto'"
       data-testid="annotation-surface"
       @pointerdown="onDrawDown"

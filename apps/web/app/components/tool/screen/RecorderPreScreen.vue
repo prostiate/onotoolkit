@@ -6,6 +6,12 @@ const store = useScreenRecorderStore();
 const emit = defineEmits<{ start: [] }>();
 
 const isCameraMode = computed(() => store.settings.recordMode === "camera");
+// Screen-only starts clean: do not reserve half of the setup card for an
+// inactive camera. The preview appears after the user explicitly enables the
+// webcam, or automatically for the camera-based modes.
+const showsCameraPreview = computed(
+  () => store.settings.recordMode !== "screen" || store.settings.webcamOn
+);
 const showsWebcamToggle = computed(() => store.settings.recordMode === "screen");
 const showsOverlaySettings = computed(
   () => store.settings.recordMode !== "camera" && store.settings.webcamOn
@@ -29,7 +35,7 @@ function onWebcamToggle(): void {
 
     <AppCard>
       <div class="space-y-5">
-        <RecorderCameraPreview />
+        <RecorderCameraPreview v-if="showsCameraPreview" />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div v-if="showsWebcamToggle" class="flex items-center gap-2">

@@ -57,7 +57,9 @@ test.describe("screen recorder", () => {
     await expect(page.getByRole("heading", { name: "Screen Recorder" })).toBeVisible();
     await expect(page.getByText("What do you want to record?")).toBeVisible();
     await expect(page.getByTestId("record-mode-screen")).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByText("Webcam is off")).toBeVisible();
+    // Screen-only keeps the setup compact until the user opts into a camera.
+    await expect(page.getByText("Webcam is off")).toBeHidden();
+    await expect(page.getByTestId("camera-preview")).toBeHidden();
     await expect(page.getByRole("button", { name: "Turn webcam on" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Start recording" })).toBeVisible();
     await expect(page.getByText("Your choices are remembered on this device")).toBeVisible();
@@ -78,7 +80,7 @@ test.describe("screen recorder", () => {
     // Camera-only sessions can still add a screen mid-recording.
     await expect(page.getByTestId("add-screen")).toBeVisible();
     await page.waitForTimeout(1_200);
-    await page.getByRole("button", { name: "Stop", exact: true }).click();
+    await page.getByRole("button", { name: "Stop recording", exact: true }).click();
     await expect(page.getByText("Recording ready")).toBeVisible({ timeout: 30_000 });
 
     // The finished clip lands in the persistent local library.
@@ -117,10 +119,18 @@ test.describe("screen recorder", () => {
     await expect(page.getByLabel("Live preview of the recording")).toBeVisible();
     await expect(page.getByRole("button", { name: "Pause recording" })).toBeEnabled();
 
-    // The draggable webcam frame and annotation dock are available while recording.
+    // The floating dock, live webcam styling popup, draggable frame, and
+    // annotation tools are available while recording.
+    await expect(page.getByTestId("recorder-control-dock")).toBeVisible();
+    await page.getByRole("button", { name: "Open webcam controls" }).click();
+    await expect(page.getByTestId("webcam-controls")).toBeVisible();
+    await expect(
+      page.getByTestId("webcam-controls").getByRole("button", { name: "Circle" })
+    ).toBeVisible();
     await expect(page.getByTestId("webcam-frame")).toBeVisible();
     await page.getByTestId("annotation-toggle").click();
     await expect(page.getByTestId("annotation-surface")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pen" })).toBeVisible();
 
     // Pause and resume.
     await page.getByRole("button", { name: "Pause recording" }).click();
@@ -129,7 +139,7 @@ test.describe("screen recorder", () => {
 
     // Stop the recording.
     await page.waitForTimeout(1_500);
-    await page.getByRole("button", { name: "Stop", exact: true }).click();
+    await page.getByRole("button", { name: "Stop recording", exact: true }).click();
 
     // Result screen with a playable preview and stats.
     await expect(page.getByText("Recording ready")).toBeVisible({ timeout: 30_000 });
@@ -161,12 +171,13 @@ test.describe("screen recorder", () => {
     await page.getByRole("button", { name: "Start recording" }).click();
     await expect(page.getByLabel("Recording duration")).toBeVisible({ timeout: 20_000 });
     await page.waitForTimeout(1_000);
-    await page.getByRole("button", { name: "Stop", exact: true }).click();
+    await page.getByRole("button", { name: "Stop recording", exact: true }).click();
     await expect(page.getByText("Recording ready")).toBeVisible({ timeout: 30_000 });
 
     await page.getByRole("button", { name: "Record another" }).click();
     await expect(page.getByRole("button", { name: "Start recording" })).toBeVisible();
-    await expect(page.getByText("Webcam is off")).toBeVisible();
+    await expect(page.getByText("Webcam is off")).toBeHidden();
+    await expect(page.getByTestId("camera-preview")).toBeHidden();
   });
 
   test("shows a helpful error when screen sharing is denied", async ({ page }) => {

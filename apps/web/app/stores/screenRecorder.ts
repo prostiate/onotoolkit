@@ -192,7 +192,9 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
           this.persist();
           this.fail(error);
         }
-      } else if (!wantsCamera && !this.cameraStream) {
+      } else if (!wantsCamera) {
+        // Switching back to Screen only is also an explicit camera opt-out.
+        // Release a stream that was acquired by a previous camera mode.
         this.releaseCameraStream();
       }
     },
