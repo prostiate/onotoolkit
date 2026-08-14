@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { clampNormalizedRect, denormalizeRect } from "~/utils/screenRecorder";
+import {
+  applyShapeClip,
+  clampNormalizedRect,
+  denormalizeRect,
+  moveNormalizedRect,
+  resizeNormalizedRect
+} from "~/utils/screenRecorder";
 import { defaultOverlayRect, parseRecorderSettings } from "~/schemas/screenRecorder";
 
 describe("denormalizeRect", () => {
@@ -10,6 +16,49 @@ describe("denormalizeRect", () => {
       width: 384,
       height: 108
     });
+  });
+});
+
+describe("overlay interaction geometry", () => {
+  const starting = { x: 0.2, y: 0.3, width: 0.25, height: 0.2 };
+
+  it("moves an overlay and clamps it at the canvas edges", () => {
+    const moved = moveNormalizedRect(starting, 0.1, -0.1);
+    expect(moved.x).toBeCloseTo(0.3);
+    expect(moved.y).toBeCloseTo(0.2);
+    expect(moveNormalizedRect(starting, 2, 2)).toEqual({
+      x: 0.75,
+      y: 0.8,
+      width: 0.25,
+      height: 0.2
+    });
+  });
+
+  it("resizes from the direct-manipulation handle and respects minimum size", () => {
+    expect(resizeNormalizedRect(starting, 0.1, 0.05)).toEqual({
+      x: 0.2,
+      y: 0.3,
+      width: 0.35,
+      height: 0.25
+    });
+    expect(resizeNormalizedRect(starting, -1, -1).width).toBe(0.05);
+    expect(resizeNormalizedRect(starting, -1, -1).height).toBe(0.05);
+  });
+});
+
+describe("webcam shape clipping", () => {
+  it("uses equal radii for a circle even when its bounding box is rectangular", () => {
+    const calls: number[][] = [];
+    const ellipse = (...args: number[]): void => calls.push(args);
+    const context = {
+      beginPath: () => undefined,
+      ellipse,
+      clip: () => undefined
+    } as unknown as CanvasRenderingContext2D;
+
+    applyShapeClip(context, "circle", 10, 20, 200, 100);
+
+    expect(calls[0]).toEqual([110, 70, 50, 50, 0, 0, Math.PI * 2]);
   });
 });
 

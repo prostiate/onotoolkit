@@ -105,6 +105,16 @@ export function clampNormalizedRect(rect: NormalizedRect): NormalizedRect {
   return { x, y, width, height };
 }
 
+/** Moves an overlay by a normalized delta while keeping it inside the canvas. */
+export function moveNormalizedRect(rect: NormalizedRect, dx: number, dy: number): NormalizedRect {
+  return clampNormalizedRect({ ...rect, x: rect.x + dx, y: rect.y + dy });
+}
+
+/** Resizes an overlay from its bottom-right corner by a normalized delta. */
+export function resizeNormalizedRect(rect: NormalizedRect, dw: number, dh: number): NormalizedRect {
+  return clampNormalizedRect({ ...rect, width: rect.width + dw, height: rect.height + dh });
+}
+
 /**
  * Draws a video into a destination rect using object-fit: cover semantics,
  * cropping the source so the rect is filled without distortion.
@@ -147,7 +157,10 @@ export function applyShapeClip(
 ): void {
   ctx.beginPath();
   if (shape === "circle") {
-    ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+    // Use the inscribed square so "circle" remains a circle even when the
+    // camera and screen have different aspect ratios.
+    const diameter = Math.min(width, height);
+    ctx.ellipse(x + width / 2, y + height / 2, diameter / 2, diameter / 2, 0, 0, Math.PI * 2);
   } else if (shape === "rounded" && typeof ctx.roundRect === "function") {
     const radius = Math.min(width, height) * 0.18;
     ctx.roundRect(x, y, width, height, radius);

@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { formatRecordingDuration } from "~/utils/screenRecorder";
 
 const store = useScreenRecorderStore();
 
 const canToggleWebcam = computed(() => store.displayActive);
+const webcamAvailable = computed(() => store.cameraStream !== null);
 const overlaySettingsOpen = ref(false);
+
+// The session component stays mounted between recordings so the canvas and
+// streams do not remount. Do not carry an open popup into the next session.
+watch(
+  () => store.hasSession,
+  (hasSession) => {
+    if (!hasSession) overlaySettingsOpen.value = false;
+  }
+);
 
 const canvasRef = useTemplateRef<HTMLCanvasElement>("canvas");
 
@@ -41,7 +51,9 @@ onBeforeUnmount(() => {
         >
           <div
             class="border-default bg-default/90 pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl border p-2 shadow-xl backdrop-blur-md sm:gap-2 sm:rounded-full"
+            role="toolbar"
             aria-label="Recording controls"
+            aria-orientation="horizontal"
           >
             <span
               class="border-default bg-muted flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-sm font-semibold"
@@ -75,7 +87,7 @@ onBeforeUnmount(() => {
               Resume
             </UButton>
 
-            <div v-if="canToggleWebcam" class="relative">
+            <div v-if="webcamAvailable" class="relative">
               <UButton
                 color="neutral"
                 variant="outline"

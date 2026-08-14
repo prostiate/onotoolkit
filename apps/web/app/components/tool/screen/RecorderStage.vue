@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from "vue";
 import type { NormalizedRect } from "~/types/screenRecorder";
+import { moveNormalizedRect, resizeNormalizedRect } from "~/utils/screenRecorder";
 
 const store = useScreenRecorderStore();
 const annotations = useRecorderAnnotations();
@@ -36,7 +37,9 @@ let dragStart = { x: 0, y: 0 };
 let rectStart: NormalizedRect = { x: 0, y: 0, width: 0, height: 0 };
 
 function beginDrag(event: PointerEvent, mode: "move" | "resize"): void {
-  if (annotations.active.value) return;
+  // The webcam frame is above the drawing surface, so moving it remains
+  // possible while annotation mode is active. Drawing still wins everywhere
+  // else on the stage.
   event.preventDefault();
   event.stopPropagation();
   dragMode.value = mode;
@@ -51,13 +54,9 @@ function onWebcamPointerMove(event: PointerEvent): void {
   const dx = point.x - dragStart.x;
   const dy = point.y - dragStart.y;
   if (dragMode.value === "move") {
-    store.setOverlayRect({ ...rectStart, x: rectStart.x + dx, y: rectStart.y + dy });
+    store.setOverlayRect(moveNormalizedRect(rectStart, dx, dy));
   } else {
-    store.setOverlayRect({
-      ...rectStart,
-      width: rectStart.width + dx,
-      height: rectStart.height + dy
-    });
+    store.setOverlayRect(resizeNormalizedRect(rectStart, dx, dy));
   }
 }
 
@@ -71,6 +70,7 @@ const drawing = ref(false);
 function onDrawDown(event: PointerEvent): void {
   if (!annotations.active.value) return;
   event.preventDefault();
+  event.stopPropagation();
   drawing.value = true;
   const point = normalizedPoint(event);
   annotations.startStroke(point.x, point.y);
@@ -95,23 +95,20 @@ function onDrawUp(): void {
     <!-- Annotation capture layer: only grabs pointer events while drawing. -->
     <div
       v-if="annotations.active.value"
-      class="absolute inset-0 touch-none cursor-crosshair"
-      :class="dragMode ? '' : 'pointer-events-auto'"
+      class="pointer-events-auto absolute inset-0 z-0 touch-none cursor-crosshair"
       data-testid="annotation-surface"
       @pointerdown="onDrawDown"
       @pointermove="onDrawMove"
       @pointerup="onDrawUp"
+      @pointercancel="onDrawUp"
       @pointerleave="onDrawUp"
     />
 
     <!-- Draggable / resizable webcam frame (WYSIWYG over the canvas PiP). -->
     <div
       v-if="showWebcamFrame"
-      class="pointer-events-auto absolute touch-none select-none border-2 border-white/80 shadow-lg"
-      :class="[
-        shapeClass,
-        annotations.active.value ? 'pointer-events-none opacity-60' : 'cursor-move'
-      ]"
+      class="pointer-events-auto absolute z-10 touch-none select-none border-2 border-white/80 shadow-lg"
+      :class="[shapeClass, 'cursor-move', annotations.active.value ? 'opacity-60' : '']"
       :style="{
         left: `${rect.x * 100}%`,
         top: `${rect.y * 100}%`,
@@ -136,8 +133,6 @@ function onDrawUp(): void {
         class="bg-primary absolute -bottom-2 -right-2 size-4 cursor-nwse-resize rounded-full border-2 border-white shadow"
         data-testid="webcam-resize"
         @pointerdown="(e) => beginDrag(e, 'resize')"
-        @pointermove="onWebcamPointerMove"
-        @pointerup="endDrag"
       />
     </div>
   </div>
