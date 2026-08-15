@@ -34,6 +34,19 @@ export interface CompressPresetOption {
   dpi: number;
 }
 
+/** Matting model quality offered by the background remover. */
+export type BackgroundRemovalQuality = "small" | "medium";
+
+export interface BackgroundRemovalQualityOption {
+  value: BackgroundRemovalQuality;
+  label: string;
+  description: string;
+  /** Exact `@imgly/background-removal` model id this maps to. */
+  model: "isnet_quint8" | "isnet_fp16";
+  /** Bytes fetched on the very first run: model weights + ONNX runtime wasm. */
+  downloadBytes: number;
+}
+
 /** Lifecycle states shared by every tool runner. */
 export type ToolRunnerState = "idle" | "preparing" | "running" | "done" | "error";
 

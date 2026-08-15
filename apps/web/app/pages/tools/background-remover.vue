@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { backgroundRemovalQualityOption } from "~/schemas/backgroundRemover";
 import type { BackgroundMode } from "~/stores/backgroundRemover";
+import type { BackgroundRemovalQuality } from "~/types/tools";
 import { formatBytes } from "~/utils/formatBytes";
 
 useSeoMeta({
@@ -11,6 +13,11 @@ useSeoMeta({
 const store = useBackgroundRemoverStore();
 const { downloadBlob } = useFileDownload();
 
+/** Size the busy panel quotes must match the quality the run actually uses. */
+const modelSize = computed(
+  () => `~${formatBytes(backgroundRemovalQualityOption(store.quality).downloadBytes, 0)}`
+);
+
 function onSelect(file: File): void {
   void store.setFile(file);
 }
@@ -18,6 +25,7 @@ function onDownload(): void {
   if (store.resultBlob) downloadBlob(store.resultBlob, store.resultName);
 }
 
+onMounted(() => store.hydrate());
 onBeforeUnmount(() => store.reset());
 </script>
 
@@ -30,13 +38,20 @@ onBeforeUnmount(() => store.reset());
     privacy-note="Your image is processed locally in your browser and never uploaded."
   >
     <div class="space-y-5">
-      <ToolDropzone
-        v-if="store.status === 'idle' || store.status === 'error'"
-        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-        hint="JPG, PNG or WebP - up to 50 MB"
-        label="Drop an image here, or tap to browse"
-        @select="onSelect"
-      />
+      <AppCard v-if="store.status === 'idle' || store.status === 'error'">
+        <div class="space-y-5">
+          <BackgroundQualityControls
+            :quality="store.quality"
+            @update:quality="(q: BackgroundRemovalQuality) => store.setQuality(q)"
+          />
+          <ToolDropzone
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+            hint="JPG, PNG or WebP - up to 50 MB"
+            label="Drop an image here, or tap to browse"
+            @select="onSelect"
+          />
+        </div>
+      </AppCard>
 
       <UAlert
         v-if="store.addError"
@@ -59,7 +74,7 @@ onBeforeUnmount(() => store.reset());
         v-if="store.status === 'working'"
         :phase="store.phase"
         :progress="store.progress"
-        model-size="~40 MB"
+        :model-size="modelSize"
         processing-label="Removing background"
       />
 
