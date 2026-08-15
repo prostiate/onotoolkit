@@ -4,6 +4,7 @@ import {
   clampNormalizedRect,
   denormalizeRect,
   moveNormalizedRect,
+  overlayShapeRect,
   resizeNormalizedRect
 } from "~/utils/screenRecorder";
 import { defaultOverlayRect, parseRecorderSettings } from "~/schemas/screenRecorder";
@@ -46,7 +47,22 @@ describe("overlay interaction geometry", () => {
   });
 });
 
-describe("webcam shape clipping", () => {
+describe("webcam shape geometry", () => {
+  it("uses the centered inscribed square for circles at arbitrary sizes", () => {
+    expect(overlayShapeRect({ x: 0.1, y: 0.2, width: 0.4, height: 0.2 }, "circle")).toEqual({
+      x: 0.2,
+      y: 0.2,
+      width: 0.2,
+      height: 0.2
+    });
+  });
+
+  it("uses the original bounds for non-circular shapes", () => {
+    const rect = { x: 0.1, y: 0.2, width: 0.4, height: 0.2 };
+    expect(overlayShapeRect(rect, "rounded")).toBe(rect);
+    expect(overlayShapeRect(rect, "square")).toBe(rect);
+  });
+
   it("uses equal radii for a circle even when its bounding box is rectangular", () => {
     const calls: number[][] = [];
     const ellipse = (...args: number[]): void => calls.push(args);

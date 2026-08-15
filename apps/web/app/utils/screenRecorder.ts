@@ -105,6 +105,22 @@ export function clampNormalizedRect(rect: NormalizedRect): NormalizedRect {
   return { x, y, width, height };
 }
 
+/** Returns the visible square used by the circle overlay inside its bounds. */
+export function inscribedSquareRect(rect: OverlayRect): OverlayRect {
+  const diameter = Math.min(rect.width, rect.height);
+  return {
+    x: rect.x + (rect.width - diameter) / 2,
+    y: rect.y + (rect.height - diameter) / 2,
+    width: diameter,
+    height: diameter
+  };
+}
+
+/** Returns the geometry occupied by a webcam shape. */
+export function overlayShapeRect(rect: OverlayRect, shape: WebcamShape): OverlayRect {
+  return shape === "circle" ? inscribedSquareRect(rect) : rect;
+}
+
 /** Moves an overlay by a normalized delta while keeping it inside the canvas. */
 export function moveNormalizedRect(rect: NormalizedRect, dx: number, dy: number): NormalizedRect {
   return clampNormalizedRect({ ...rect, x: rect.x + dx, y: rect.y + dy });
@@ -155,17 +171,23 @@ export function applyShapeClip(
   width: number,
   height: number
 ): void {
+  const shapeRect = overlayShapeRect({ x, y, width, height }, shape);
   ctx.beginPath();
   if (shape === "circle") {
-    // Use the inscribed square so "circle" remains a circle even when the
-    // camera and screen have different aspect ratios.
-    const diameter = Math.min(width, height);
-    ctx.ellipse(x + width / 2, y + height / 2, diameter / 2, diameter / 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      shapeRect.x + shapeRect.width / 2,
+      shapeRect.y + shapeRect.height / 2,
+      shapeRect.width / 2,
+      shapeRect.height / 2,
+      0,
+      0,
+      Math.PI * 2
+    );
   } else if (shape === "rounded" && typeof ctx.roundRect === "function") {
-    const radius = Math.min(width, height) * 0.18;
-    ctx.roundRect(x, y, width, height, radius);
+    const radius = Math.min(shapeRect.width, shapeRect.height) * 0.18;
+    ctx.roundRect(shapeRect.x, shapeRect.y, shapeRect.width, shapeRect.height, radius);
   } else {
-    ctx.rect(x, y, width, height);
+    ctx.rect(shapeRect.x, shapeRect.y, shapeRect.width, shapeRect.height);
   }
   ctx.clip();
 }

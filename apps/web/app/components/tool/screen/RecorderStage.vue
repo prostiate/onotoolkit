@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, useTemplateRef } from "vue";
 import type { NormalizedRect } from "~/types/screenRecorder";
-import { moveNormalizedRect, resizeNormalizedRect } from "~/utils/screenRecorder";
+import {
+  moveNormalizedRect,
+  overlayShapeRect,
+  resizeNormalizedRect
+} from "~/utils/screenRecorder";
 
 const store = useScreenRecorderStore();
 const annotations = useRecorderAnnotations();
@@ -14,6 +18,7 @@ const showWebcamFrame = computed(
 );
 
 const rect = computed(() => store.settings.overlayRect);
+const shapeRect = computed(() => overlayShapeRect(rect.value, store.settings.overlayShape));
 
 const shapeClass = computed(() => {
   if (store.settings.overlayShape === "circle") return "rounded-full";
@@ -110,10 +115,10 @@ function onDrawUp(): void {
       class="pointer-events-auto absolute z-10 touch-none select-none border-2 border-white/80 shadow-lg"
       :class="[shapeClass, 'cursor-move', annotations.active.value ? 'opacity-60' : '']"
       :style="{
-        left: `${rect.x * 100}%`,
-        top: `${rect.y * 100}%`,
-        width: `${rect.width * 100}%`,
-        height: `${rect.height * 100}%`
+        left: `${shapeRect.x * 100}%`,
+        top: `${shapeRect.y * 100}%`,
+        width: `${shapeRect.width * 100}%`,
+        height: `${shapeRect.height * 100}%`
       }"
       data-testid="webcam-frame"
       @pointerdown="(e) => beginDrag(e, 'move')"
