@@ -7,6 +7,7 @@ import type {
   RecorderMode,
   RecorderResolution,
   RecorderResult,
+  OverlaySize,
   RecorderSession,
   RecorderStatus,
   StoredRecording,
@@ -271,6 +272,11 @@ export const useScreenRecorderStore = defineStore("screenRecorder", {
 
     setOverlayShape(shape: WebcamShape): void {
       this.settings.overlayShape = shape;
+      this.persist();
+    },
+
+    setOverlaySize(size: OverlaySize): void {
+      this.settings.overlaySize = size;
       this.persist();
     },
 

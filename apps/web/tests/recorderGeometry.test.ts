@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { clampNormalizedRect, denormalizeRect } from "~/utils/screenRecorder";
+import {
+  applyShapeClip,
+  clampNormalizedRect,
+  denormalizeRect,
+  moveNormalizedRect,
+  overlayShapeNormalizedRect,
+  overlayShapeRect,
+  resizeNormalizedRect
+} from "~/utils/screenRecorder";
 import { defaultOverlayRect, parseRecorderSettings } from "~/schemas/screenRecorder";
 
 describe("denormalizeRect", () => {
@@ -9,6 +17,75 @@ describe("denormalizeRect", () => {
       y: 270,
       width: 384,
       height: 108
+    });
+  });
+});
+
+describe("overlay interaction geometry", () => {
+  const starting = { x: 0.2, y: 0.3, width: 0.25, height: 0.2 };
+
+  it("moves an overlay and clamps it at the canvas edges", () => {
+    const moved = moveNormalizedRect(starting, 0.1, -0.1);
+    expect(moved.x).toBeCloseTo(0.3);
+    expect(moved.y).toBeCloseTo(0.2);
+    expect(moveNormalizedRect(starting, 2, 2)).toEqual({
+      x: 0.75,
+      y: 0.8,
+      width: 0.25,
+      height: 0.2
+    });
+  });
+
+  it("resizes from the direct-manipulation handle and respects minimum size", () => {
+    expect(resizeNormalizedRect(starting, 0.1, 0.05)).toEqual({
+      x: 0.2,
+      y: 0.3,
+      width: 0.35,
+      height: 0.25
+    });
+    expect(resizeNormalizedRect(starting, -1, -1).width).toBe(0.05);
+    expect(resizeNormalizedRect(starting, -1, -1).height).toBe(0.05);
+  });
+});
+
+describe("webcam shape geometry", () => {
+  it("uses the centered inscribed square for circles at arbitrary sizes", () => {
+    expect(overlayShapeRect({ x: 0.1, y: 0.2, width: 0.4, height: 0.2 }, "circle")).toEqual({
+      x: 0.2,
+      y: 0.2,
+      width: 0.2,
+      height: 0.2
+    });
+  });
+
+  it("uses the original bounds for non-circular shapes", () => {
+    const rect = { x: 0.1, y: 0.2, width: 0.4, height: 0.2 };
+    expect(overlayShapeRect(rect, "rounded")).toBe(rect);
+    expect(overlayShapeRect(rect, "square")).toBe(rect);
+  });
+
+  it("uses equal radii for a circle even when its bounding box is rectangular", () => {
+    const calls: number[][] = [];
+    const ellipse = (...args: number[]): void => calls.push(args);
+    const context = {
+      beginPath: () => undefined,
+      ellipse,
+      clip: () => undefined
+    } as unknown as CanvasRenderingContext2D;
+
+    applyShapeClip(context, "circle", 10, 20, 200, 100);
+
+    expect(calls[0]).toEqual([110, 70, 50, 50, 0, 0, Math.PI * 2]);
+  });
+
+  it("keeps circle bounds square in pixels on a widescreen canvas", () => {
+    expect(
+      overlayShapeNormalizedRect({ x: 0.1, y: 0.2, width: 0.4, height: 0.2 }, "circle", 1600, 900)
+    ).toEqual({
+      x: 0.24375,
+      y: 0.2,
+      width: 0.1125,
+      height: 0.2
     });
   });
 });

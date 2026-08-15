@@ -105,6 +105,57 @@ export function clampNormalizedRect(rect: NormalizedRect): NormalizedRect {
   return { x, y, width, height };
 }
 
+/** Returns the visible square used by the circle overlay inside its bounds. */
+export function inscribedSquareRect(rect: OverlayRect): OverlayRect {
+  const diameter = Math.min(rect.width, rect.height);
+  return {
+    x: rect.x + (rect.width - diameter) / 2,
+    y: rect.y + (rect.height - diameter) / 2,
+    width: diameter,
+    height: diameter
+  };
+}
+
+/** Returns the geometry occupied by a webcam shape. */
+export function overlayShapeRect(rect: OverlayRect, shape: WebcamShape): OverlayRect {
+  return shape === "circle" ? inscribedSquareRect(rect) : rect;
+}
+
+export function overlayShapeNormalizedRect(
+  rect: NormalizedRect,
+  shape: WebcamShape,
+  canvasWidth: number,
+  canvasHeight: number
+): NormalizedRect {
+  if (
+    shape !== "circle" ||
+    !Number.isFinite(canvasWidth) ||
+    !Number.isFinite(canvasHeight) ||
+    canvasWidth <= 0 ||
+    canvasHeight <= 0
+  ) {
+    return rect;
+  }
+
+  const shaped = overlayShapeRect(denormalizeRect(rect, canvasWidth, canvasHeight), shape);
+  return {
+    x: shaped.x / canvasWidth,
+    y: shaped.y / canvasHeight,
+    width: shaped.width / canvasWidth,
+    height: shaped.height / canvasHeight
+  };
+}
+
+/** Moves an overlay by a normalized delta while keeping it inside the canvas. */
+export function moveNormalizedRect(rect: NormalizedRect, dx: number, dy: number): NormalizedRect {
+  return clampNormalizedRect({ ...rect, x: rect.x + dx, y: rect.y + dy });
+}
+
+/** Resizes an overlay from its bottom-right corner by a normalized delta. */
+export function resizeNormalizedRect(rect: NormalizedRect, dw: number, dh: number): NormalizedRect {
+  return clampNormalizedRect({ ...rect, width: rect.width + dw, height: rect.height + dh });
+}
+
 /**
  * Draws a video into a destination rect using object-fit: cover semantics,
  * cropping the source so the rect is filled without distortion.
@@ -145,14 +196,23 @@ export function applyShapeClip(
   width: number,
   height: number
 ): void {
+  const shapeRect = overlayShapeRect({ x, y, width, height }, shape);
   ctx.beginPath();
   if (shape === "circle") {
-    ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(
+      shapeRect.x + shapeRect.width / 2,
+      shapeRect.y + shapeRect.height / 2,
+      shapeRect.width / 2,
+      shapeRect.height / 2,
+      0,
+      0,
+      Math.PI * 2
+    );
   } else if (shape === "rounded" && typeof ctx.roundRect === "function") {
-    const radius = Math.min(width, height) * 0.18;
-    ctx.roundRect(x, y, width, height, radius);
+    const radius = Math.min(shapeRect.width, shapeRect.height) * 0.18;
+    ctx.roundRect(shapeRect.x, shapeRect.y, shapeRect.width, shapeRect.height, radius);
   } else {
-    ctx.rect(x, y, width, height);
+    ctx.rect(shapeRect.x, shapeRect.y, shapeRect.width, shapeRect.height);
   }
   ctx.clip();
 }

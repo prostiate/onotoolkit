@@ -36,9 +36,11 @@ function applyCorner(corner: WebcamCorner): void {
   store.setOverlayRect(positionFor(corner, width, height));
 }
 
-function applySize(frac: number): void {
+function applySize(size: "small" | "medium" | "large", frac: number): void {
+  store.setOverlaySize(size);
   const width = frac;
-  // Keep it visually squarer on a 16:9 canvas.
+  // Keep it visually squarer on a 16:9 canvas while preserving the user's
+  // current corner choice. Direct drag/resize can refine this starting size.
   const height = frac * 1.15;
   store.setOverlayRect(positionFor(store.settings.overlayCorner, width, height));
 }
@@ -87,7 +89,7 @@ function isActiveSize(frac: number): boolean {
             square
             :color="isActiveSize(size.frac) ? 'primary' : 'neutral'"
             :variant="isActiveSize(size.frac) ? 'solid' : 'soft'"
-            @click="applySize(size.frac)"
+            @click="applySize(size.value, size.frac)"
           />
         </div>
       </div>
