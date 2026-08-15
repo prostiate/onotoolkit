@@ -80,12 +80,7 @@ describe("webcam shape geometry", () => {
 
   it("keeps circle bounds square in pixels on a widescreen canvas", () => {
     expect(
-      overlayShapeNormalizedRect(
-        { x: 0.1, y: 0.2, width: 0.4, height: 0.2 },
-        "circle",
-        1600,
-        900
-      )
+      overlayShapeNormalizedRect({ x: 0.1, y: 0.2, width: 0.4, height: 0.2 }, "circle", 1600, 900)
     ).toEqual({
       x: 0.24375,
       y: 0.2,

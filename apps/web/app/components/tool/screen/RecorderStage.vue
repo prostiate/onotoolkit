@@ -121,7 +121,7 @@ function onDrawUp(): void {
 
 <template>
   <div ref="stage" class="pointer-events-none absolute inset-0">
-    <!-- Annotation capture layer: only grabs pointer events while drawing. -->
+    <!-- Annotation capture layer: grabs pointer events while annotation mode is active. -->
     <div
       v-if="annotations.active.value"
       class="pointer-events-auto absolute inset-0 z-0 touch-none cursor-crosshair"
