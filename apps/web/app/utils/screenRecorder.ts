@@ -121,6 +121,31 @@ export function overlayShapeRect(rect: OverlayRect, shape: WebcamShape): Overlay
   return shape === "circle" ? inscribedSquareRect(rect) : rect;
 }
 
+export function overlayShapeNormalizedRect(
+  rect: NormalizedRect,
+  shape: WebcamShape,
+  canvasWidth: number,
+  canvasHeight: number
+): NormalizedRect {
+  if (
+    shape !== "circle" ||
+    !Number.isFinite(canvasWidth) ||
+    !Number.isFinite(canvasHeight) ||
+    canvasWidth <= 0 ||
+    canvasHeight <= 0
+  ) {
+    return rect;
+  }
+
+  const shaped = overlayShapeRect(denormalizeRect(rect, canvasWidth, canvasHeight), shape);
+  return {
+    x: shaped.x / canvasWidth,
+    y: shaped.y / canvasHeight,
+    width: shaped.width / canvasWidth,
+    height: shaped.height / canvasHeight
+  };
+}
+
 /** Moves an overlay by a normalized delta while keeping it inside the canvas. */
 export function moveNormalizedRect(rect: NormalizedRect, dx: number, dy: number): NormalizedRect {
   return clampNormalizedRect({ ...rect, x: rect.x + dx, y: rect.y + dy });

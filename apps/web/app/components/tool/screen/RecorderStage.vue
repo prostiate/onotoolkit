@@ -3,7 +3,7 @@ import { computed, ref, useTemplateRef } from "vue";
 import type { NormalizedRect } from "~/types/screenRecorder";
 import {
   moveNormalizedRect,
-  overlayShapeRect,
+  overlayShapeNormalizedRect,
   resizeNormalizedRect
 } from "~/utils/screenRecorder";
 
@@ -11,6 +11,23 @@ const store = useScreenRecorderStore();
 const annotations = useRecorderAnnotations();
 
 const stageRef = useTemplateRef<HTMLDivElement>("stage");
+const stageSize = ref({ width: 0, height: 0 });
+let stageObserver: ResizeObserver | null = null;
+
+function measureStage(): void {
+  const bounds = stageRef.value?.getBoundingClientRect();
+  if (!bounds) return;
+  stageSize.value = { width: bounds.width, height: bounds.height };
+}
+
+onMounted(() => {
+  measureStage();
+  if (typeof ResizeObserver === "undefined" || !stageRef.value) return;
+  stageObserver = new ResizeObserver(measureStage);
+  stageObserver.observe(stageRef.value);
+});
+
+onBeforeUnmount(() => stageObserver?.disconnect());
 
 // Show the draggable webcam frame only when the camera is a PiP over a screen.
 const showWebcamFrame = computed(
@@ -18,7 +35,14 @@ const showWebcamFrame = computed(
 );
 
 const rect = computed(() => store.settings.overlayRect);
-const shapeRect = computed(() => overlayShapeRect(rect.value, store.settings.overlayShape));
+const shapeRect = computed(() =>
+  overlayShapeNormalizedRect(
+    rect.value,
+    store.settings.overlayShape,
+    stageSize.value.width,
+    stageSize.value.height
+  )
+);
 
 const shapeClass = computed(() => {
   if (store.settings.overlayShape === "circle") return "rounded-full";

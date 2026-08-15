@@ -4,6 +4,7 @@ import {
   clampNormalizedRect,
   denormalizeRect,
   moveNormalizedRect,
+  overlayShapeNormalizedRect,
   overlayShapeRect,
   resizeNormalizedRect
 } from "~/utils/screenRecorder";
@@ -75,6 +76,22 @@ describe("webcam shape geometry", () => {
     applyShapeClip(context, "circle", 10, 20, 200, 100);
 
     expect(calls[0]).toEqual([110, 70, 50, 50, 0, 0, Math.PI * 2]);
+  });
+
+  it("keeps circle bounds square in pixels on a widescreen canvas", () => {
+    expect(
+      overlayShapeNormalizedRect(
+        { x: 0.1, y: 0.2, width: 0.4, height: 0.2 },
+        "circle",
+        1600,
+        900
+      )
+    ).toEqual({
+      x: 0.24375,
+      y: 0.2,
+      width: 0.1125,
+      height: 0.2
+    });
   });
 });
 
