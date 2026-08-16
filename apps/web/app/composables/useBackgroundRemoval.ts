@@ -1,4 +1,9 @@
+import type { BackgroundRemovalQuality } from "~/types/tools";
 import type { RgbColor, RgbaImage } from "~/utils/image";
+import {
+  DEFAULT_BACKGROUND_REMOVAL_QUALITY,
+  backgroundRemovalQualityOption
+} from "~/schemas/backgroundRemover";
 import { flattenOntoColor } from "~/utils/image";
 
 /** Coarse progress phase surfaced to the UI while a run is in flight. */
@@ -19,9 +24,16 @@ export interface BackgroundRemovalResult {
 
 /**
  * Wraps `@imgly/background-removal` (AGPL, same as this repo). The library and
- * its ~40MB ONNX weights are imported lazily on first use so they never enter
- * the SSR bundle, and are cached by the browser after the first download. The
- * image itself is processed entirely on-device - nothing is uploaded.
+ * its ONNX weights are imported lazily on first use so they never enter the SSR
+ * bundle, and are cached by the browser after the first download. The image
+ * itself is processed entirely on-device - nothing is uploaded.
+ *
+ * The model is chosen explicitly rather than left to the library, whose own
+ * default is "medium" (`isnet_fp16`, 88 MB). We pass the user's preference,
+ * which defaults to "small" (`isnet_quint8`, 44 MB); with the shared ~11.8 MB
+ * ONNX runtime wasm on top, that is a ~56 MB first run instead of ~100 MB.
+ * `~/schemas/backgroundRemover` holds the exact per-quality byte counts the UI
+ * shows before the download starts.
  */
 export function useBackgroundRemoval() {
   const { blobToRgba, rgbaToBlob } = useCanvasImage();
@@ -29,7 +41,8 @@ export function useBackgroundRemoval() {
   /** Removes the background, returning a transparent RGBA cutout. */
   async function removeBackground(
     file: File | Blob,
-    onProgress?: (progress: BackgroundRemovalProgress) => void
+    onProgress?: (progress: BackgroundRemovalProgress) => void,
+    quality: BackgroundRemovalQuality = DEFAULT_BACKGROUND_REMOVAL_QUALITY
   ): Promise<BackgroundRemovalResult> {
     if (import.meta.server) {
       throw new Error("Background removal is only available in the browser.");
@@ -37,6 +50,7 @@ export function useBackgroundRemoval() {
     const { removeBackground: imglyRemoveBackground } = await import("@imgly/background-removal");
 
     const blob = await imglyRemoveBackground(file, {
+      model: backgroundRemovalQualityOption(quality).model,
       output: { format: "image/png" },
       progress: (key: string, current: number, total: number) => {
         const ratio = total > 0 ? current / total : undefined;
