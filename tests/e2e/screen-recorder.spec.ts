@@ -178,6 +178,16 @@ test.describe("screen recorder", () => {
     await expect(webcamFrame).toHaveClass(/rounded-none/);
     await page.getByTestId("webcam-controls").getByRole("button", { name: "Rounded" }).click();
 
+    // Keep the webcam clear of the bottom recording dock on narrow screens.
+    await page.getByTestId("webcam-controls").getByRole("button", { name: "top-right" }).click();
+    // Close the style popover before dragging, since it overlaps the preview on mobile.
+    await page.getByRole("button", { name: "Open webcam controls" }).click();
+    await expect(page.getByTestId("webcam-controls")).toBeHidden();
+
+    await page
+      .getByLabel("Live preview of the recording")
+      .evaluate((element) => element.scrollIntoView({ block: "center" }));
+
     const beforeMove = await webcamFrame.evaluate((element) => element.getAttribute("style"));
     const frameBox = await webcamFrame.boundingBox();
     expect(frameBox).not.toBeNull();
@@ -212,15 +222,15 @@ test.describe("screen recorder", () => {
 
     await page.getByTestId("annotation-toggle").click();
     await expect(page.getByTestId("annotation-surface")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Pen" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pen", exact: true })).toBeVisible();
     const surfaceBox = await page.getByTestId("annotation-surface").boundingBox();
     expect(surfaceBox).not.toBeNull();
     if (surfaceBox) {
-      const x = surfaceBox.x + surfaceBox.width * 0.25;
-      const y = surfaceBox.y + surfaceBox.height * 0.25;
+      const x = surfaceBox.x + surfaceBox.width * 0.65;
+      const y = surfaceBox.y + surfaceBox.height * 0.1;
       await page.mouse.move(x, y);
       await page.mouse.down();
-      await page.mouse.move(x + 60, y + 30);
+      await page.mouse.move(x + 5, y + 20);
       await page.mouse.up();
     }
     await expect(page.getByRole("button", { name: "Undo last stroke" })).toBeEnabled();

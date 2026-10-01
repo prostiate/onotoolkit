@@ -24,3 +24,6 @@ docs/
 .agents/
 .claude/
 skills-lock.json
+
+# ONNX video runtime copied from the pinned dependency by Nuxt config.
+apps/web/public/vendor/gemini-video/

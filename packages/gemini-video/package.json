@@ -1,0 +1,29 @@
+{
+  "name": "@ono-toolkit/gemini-video",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./vendor/video/videoExport.js"
+    },
+    "./presets": {
+      "types": "./presets.d.ts",
+      "import": "./vendor/video/videoPresetPolicy.js"
+    },
+    "./profiles": {
+      "types": "./profiles.d.ts",
+      "import": "./vendor/video/videoDenoiseRuntimePolicy.js"
+    },
+    "./runtime": {
+      "types": "./runtime.d.ts",
+      "import": "./vendor/core/allenkFdncnnOnnxRuntime.js"
+    }
+  },
+  "dependencies": {
+    "mediabunny": "1.46.0",
+    "onnxruntime-web": "1.26.0"
+  }
+}

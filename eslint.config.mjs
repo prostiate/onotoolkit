@@ -14,7 +14,8 @@ export default withNuxt(
       "**/test-results/**",
       "**/playwright-report/**",
       "pnpm-lock.yaml",
-      "docs/**"
+      "docs/**",
+      "packages/gemini-video/vendor/**"
     ]
   },
   {

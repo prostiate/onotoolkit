@@ -1,3 +1,29 @@
+import { copyFileSync, mkdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Copy the separately pinned video ONNX runtime to same-origin static assets.
+// These files are generated from dependencies, never committed or hand-edited.
+const videoRequire = createRequire(
+  new URL("../../packages/gemini-video/package.json", import.meta.url)
+);
+const videoRuntimeDir = dirname(videoRequire.resolve("onnxruntime-web/wasm"));
+const videoAssetDir = fileURLToPath(new URL("./public/vendor/gemini-video/", import.meta.url));
+mkdirSync(videoAssetDir, { recursive: true });
+for (const name of [
+  "ort-wasm-simd-threaded.mjs",
+  "ort-wasm-simd-threaded.wasm",
+  "LICENSE",
+  "ThirdPartyNotices.txt"
+]) {
+  const source =
+    name === "LICENSE" || name.endsWith(".txt")
+      ? fileURLToPath(new URL(`../../packages/gemini-video/notices/ONNX-${name}`, import.meta.url))
+      : join(videoRuntimeDir, name);
+  copyFileSync(source, join(videoAssetDir, name));
+}
+
 /** Minimal shape of the Rollup `generateBundle` plugin hook we rely on. */
 interface BundleDropPlugin {
   name: string;

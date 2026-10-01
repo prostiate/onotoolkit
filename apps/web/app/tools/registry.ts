@@ -24,7 +24,7 @@ export const toolGroups: readonly ToolGroup[] = [
   {
     id: "video",
     title: "Video",
-    description: "Record and capture video in your browser."
+    description: "Record, capture, and clean video in your browser."
   }
 ] as const;
 
@@ -220,6 +220,16 @@ export const tools: readonly ToolDefinition[] = [
     status: "available",
     engine: "browser",
     route: "/tools/markdown"
+  },
+  {
+    slug: "video-watermark-remover",
+    title: "Gemini Video Watermark Remover",
+    description: "Remove supported Gemini and Veo watermarks locally, then download a clean MP4.",
+    icon: "i-lucide-film",
+    group: "video",
+    status: "available",
+    engine: "onnx",
+    route: "/tools/video-watermark-remover"
   },
   {
     slug: "screen-recorder",
