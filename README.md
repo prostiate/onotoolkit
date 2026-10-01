@@ -218,6 +218,25 @@ tools possible - all AI runs on-device, nothing is uploaded:
   Squoosh WebAssembly codecs (MozJPEG, oxipng, WebP) that power image
   compression, entirely in the browser (MIT).
 
+- **[Gemini Watermark Remover](https://github.com/GargantuaX/gemini-watermark-remover)**
+  by GargantuaX - the pinned browser detection, cleanup and MP4 export pipeline
+  for the Gemini Video Watermark Remover (MIT). See
+  [the source snapshot](packages/gemini-video/README.md) for revision and notices.
+- **[GeminiWatermarkTool](https://github.com/allenk/GeminiWatermarkTool)** by allenk
+  - the FDnCNN model used for video cleanup (MIT).
+- **[Mediabunny](https://mediabunny.dev/)** - browser-native video decoding and
+  MP4 encoding via WebCodecs (MPL-2.0).
+
+## Gemini Video Watermark Remover
+
+Choose a short original Gemini or Veo clip (MP4, WebM or MOV, up to 100 MB),
+start local cleanup, compare synchronized previews, and download an MP4.
+The first processing run fetches about 16 MB of same-origin model/runtime assets.
+Processing runs in a dedicated worker; cancelling or leaving the tool releases
+it. Recent desktop Chrome or Edge with H.264 WebCodecs encoding is recommended.
+Compatible audio is copied; the UI warns when audio cannot be preserved.
+Export bitrate and best-effort detection preferences are remembered locally.
+
 ## Author
 
 Built by **[Muhammad Irfan Kurniawan](https://www.linkedin.com/in/muhammad-irfan-kurniawan)**.

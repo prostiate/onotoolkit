@@ -6,5 +6,8 @@
     "dev": "nuxt dev --host 127.0.0.1",
     "build": "nuxt build",
     "typecheck": "nuxt prepare && vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@ono-toolkit/gemini-video": "workspace:*"
   }
 }

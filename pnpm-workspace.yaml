@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - packages/*
 
 allowBuilds:
   esbuild: true
@@ -11,3 +12,13 @@ allowBuilds:
   # onnxruntime-web transitive dep; its build script is not needed for the
   # browser (WASM/WebGPU) runtime, so its postinstall stays disabled.
   protobufjs: false
+
+minimumReleaseAgeExclude:
+  - "@cloudflare/workerd-darwin-64@1.20260930.2"
+  - "@cloudflare/workerd-darwin-arm64@1.20260930.2"
+  - "@cloudflare/workerd-linux-64@1.20260930.2"
+  - "@cloudflare/workerd-linux-arm64@1.20260930.2"
+  - "@cloudflare/workerd-windows-64@1.20260930.2"
+  - miniflare@5.20260930.0-alpha
+  - workerd@1.20260930.2
+  - wrangler@4.145.0

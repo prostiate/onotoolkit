@@ -8,6 +8,10 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 
 `pnpm validate` runs the full gate (format:check, lint, typecheck, test, build). Browser E2E
 (`pnpm test:e2e`) needs a real Chrome and does not run in headless agent sandboxes.
+Wrangler is pinned after reproducing a 4.114.0 preview-server crash; validate upgrades with E2E.
+The video watermark specs explicitly use the installed Chrome channel for H.264 encoding.
+`main` requires a PR, including for admins, with no required remote status checks.
+Run the local validation gate before merging. Cloudflare deploys production from `main`.
 
 ## First-run download budgets
 
@@ -22,6 +26,13 @@ thing it measures (see `apps/web/app/schemas/backgroundRemover.ts`) so it cannot
 - Watermark remover - MI-GAN from Hugging Face, 28,079,181 B, plus onnxruntime-web wasm
   from jsDelivr (11,819,815 B).
 - PDF compress/merge - `@jspawn/ghostscript-wasm` `gs.wasm`, 16,177,271 B, served same-origin.
+
+## Gemini video pipeline
+
+`packages/gemini-video/README.md` records the immutable upstream source revision and update
+boundary. Preserve vendored source and generated alpha maps byte for byte. The workspace
+package pins its own ONNX runtime independently of image tools. Nuxt copies its CPU runtime
+into ignored same-origin assets; model/runtime download budgets live in `utils/videoWatermark.ts`.
 
 ## Per-tool settings
 

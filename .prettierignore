@@ -14,3 +14,6 @@ scripts/git-hooks
 docs/prompt-*.md
 docs/prompt.md
 apps/web/public/vendor
+
+# Preserve the licensed upstream snapshot byte for byte.
+packages/gemini-video/vendor
