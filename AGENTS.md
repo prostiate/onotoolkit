@@ -10,7 +10,8 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 (`pnpm test:e2e`) needs a real Chrome and does not run in headless agent sandboxes.
 Wrangler is pinned after reproducing a 4.114.0 preview-server crash; validate upgrades with E2E.
 The video watermark specs explicitly use the installed Chrome channel for H.264 encoding.
-`main` requires a PR and the `Workers Builds: ono-toolkit` check, including for admins.
+`main` requires a PR, including for admins, with no required remote status checks.
+Run the local validation gate before merging. Cloudflare deploys production from `main`.
 
 ## First-run download budgets
 

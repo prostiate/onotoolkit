@@ -4,6 +4,7 @@
   "main": "apps/web/.output/server/index.mjs",
   "compatibility_date": "2026-07-28",
   "compatibility_flags": ["nodejs_compat"],
+  "preview_urls": false,
   // SSR Worker (Nitro cloudflare_module). Pages render on the edge for SEO; the
   // static client bundle and the PDF WASM are served from the assets binding.
   // File processing still runs entirely in the browser - nothing is uploaded.
