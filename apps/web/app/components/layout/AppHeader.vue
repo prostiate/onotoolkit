@@ -63,6 +63,29 @@ function onMenuBlur(event: FocusEvent, id: string): void {
   }
 }
 
+// The panel is anchored below the header card, not the trigger button, so the
+// cursor crosses a small gap on its way in. Delay closing so that gap does not
+// dismiss the panel before the pointer reaches it.
+let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelClose(): void {
+  if (closeTimer) clearTimeout(closeTimer);
+  closeTimer = null;
+}
+
+function showMenu(id: string): void {
+  cancelClose();
+  openMenu.value = id;
+}
+
+function scheduleClose(id: string): void {
+  cancelClose();
+  closeTimer = setTimeout(() => {
+    closeTimer = null;
+    if (openMenu.value === id) openMenu.value = null;
+  }, 150);
+}
+
 function toggleGroup(id: string): void {
   openGroup.value = openGroup.value === id ? null : id;
 }
@@ -74,6 +97,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   window.removeEventListener("scroll", onScroll);
+  cancelClose();
   lockBody(false);
 });
 
@@ -81,6 +105,7 @@ watch(
   () => route.fullPath,
   () => {
     open.value = false;
+    cancelClose();
     openMenu.value = null;
     openGroup.value = null;
   }
@@ -140,9 +165,9 @@ const navItemClass =
           v-for="menu in menus"
           :key="menu.id"
           class="static"
-          @mouseenter="openMenu = menu.id"
-          @mouseleave="openMenu = null"
-          @focusin="openMenu = menu.id"
+          @mouseenter="showMenu(menu.id)"
+          @mouseleave="scheduleClose(menu.id)"
+          @focusin="showMenu(menu.id)"
           @focusout="onMenuBlur($event, menu.id)"
         >
           <Motion :while-hover="{ scale: 1.04 }" :while-press="{ scale: 0.96 }" class="inline-flex">
